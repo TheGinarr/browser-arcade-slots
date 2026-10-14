@@ -51,14 +51,14 @@ import { bewegungReduziert } from "./ui.js";
  * Die Lernboxen der Spiele nennen diese Schwellen (x5 / x15 / x40).
  */
 export const STUFEN = [
-  { abFaktor: 5,  name: "SCHÖNER GEWINN", dauerMs: 1200, tickerMs: 700 },
+  { abFaktor: 5, name: "SCHÖNER GEWINN", dauerMs: 1200, tickerMs: 700 },
   { abFaktor: 15, name: "GROSSER GEWINN", dauerMs: 2500, tickerMs: 1500 },
-  { abFaktor: 40, name: "MEGA GEWINN",    dauerMs: 4000, tickerMs: 3000 },
+  { abFaktor: 40, name: "MEGA GEWINN", dauerMs: 4000, tickerMs: 3000 },
 ];
 
-const DAUER_REDUZIERT_MS = 800;       // Banner bei "Bewegung reduzieren"
-const AUSBLENDEN_MS = 220;            // sanftes Ausblenden am natürlichen Ende
-const AUSBLENDEN_SKIP_MS = 120;       // kurzes Ausblenden nach Klick/Taste
+const DAUER_REDUZIERT_MS = 800; // Banner bei "Bewegung reduzieren"
+const AUSBLENDEN_MS = 220; // sanftes Ausblenden am natürlichen Ende
+const AUSBLENDEN_SKIP_MS = 120; // kurzes Ausblenden nach Klick/Taste
 
 /**
  * Bestimmt die Stufe (0 bis STUFEN.length) aus Auszahlung und Gesamteinsatz.
@@ -71,7 +71,8 @@ const AUSBLENDEN_SKIP_MS = 120;       // kurzes Ausblenden nach Klick/Taste
  * Faktor, und die Division durch 0 wird gar nicht erst versucht.
  */
 export function stufeBestimmen(betrag, einsatz) {
-  if (!Number.isFinite(betrag) || !Number.isFinite(einsatz) || einsatz <= 0 || betrag <= 0) return 0;
+  if (!Number.isFinite(betrag) || !Number.isFinite(einsatz) || einsatz <= 0 || betrag <= 0)
+    return 0;
   let stufe = 0;
   STUFEN.forEach((s, i) => {
     if (betrag >= s.abFaktor * einsatz) stufe = i + 1;
@@ -104,10 +105,10 @@ function faktorText(faktor) {
  * Zeit bringt nur noch 3 % des Betrags, die letzten Ziffern kriechen also.
  */
 export const MEGA_ETAPPEN = [
-  { bisZeit: 0.30, bisWert: 0.60 },
-  { bisZeit: 0.60, bisWert: 0.85 },
+  { bisZeit: 0.3, bisWert: 0.6 },
+  { bisZeit: 0.6, bisWert: 0.85 },
   { bisZeit: 0.85, bisWert: 0.97 },
-  { bisZeit: 1.00, bisWert: 1.00 },
+  { bisZeit: 1.0, bisWert: 1.0 },
 ];
 
 /** Rechnet eine Zeit t (0 bis 1) in einen Wert-Anteil (0 bis 1) um, Etappe für Etappe. */
@@ -154,9 +155,9 @@ function easeOut(t) {
    doppelt so schnell laufen wie auf einem 60-Hz-Bildschirm.
    ============================================================ */
 
-export const PARTIKEL_MAX = 90;        // so viele Partikel leben höchstens gleichzeitig (Obergrenze für die Leistung)
-export const GRAVITATION = 900;        // Pixel pro Sekunde zum Quadrat (auf der Erde wären es ca. 9,81 Meter)
-const WIDERSTAND = 0.4;                // Luftwiderstand: Anteil der Geschwindigkeit, der pro Sekunde verloren geht
+export const PARTIKEL_MAX = 90; // so viele Partikel leben höchstens gleichzeitig (Obergrenze für die Leistung)
+export const GRAVITATION = 900; // Pixel pro Sekunde zum Quadrat (auf der Erde wären es ca. 9,81 Meter)
+const WIDERSTAND = 0.4; // Luftwiderstand: Anteil der Geschwindigkeit, der pro Sekunde verloren geht
 
 /**
  * Erzeugt ein neues Partikel. `art` bestimmt Startort und Anfangsgeschwindigkeit:
@@ -172,13 +173,16 @@ export function partikelNeu(art, breite, quelleX, quelleY, zufall = Math.random)
   const istMuenze = zufall() < (art === "regen" ? 0.85 : 0.45);
   const p = {
     art: istMuenze ? "muenze" : "funke",
-    x: 0, y: 0, vx: 0, vy: 0,
-    groesse: istMuenze ? zwischen(5, 9) : zwischen(2, 4),   // Radius der Münze bzw. Kantenlänge des Funkens in Pixeln
-    winkel: zwischen(0, Math.PI * 2),                      // Drehwinkel der Münze (für den "Wende"-Effekt)
-    drehTempo: zwischen(4, 11),                            // Radiant pro Sekunde
-    schwere: istMuenze ? 1 : 0.45,                         // Funken sind leicht, sie fallen langsamer
+    x: 0,
+    y: 0,
+    vx: 0,
+    vy: 0,
+    groesse: istMuenze ? zwischen(5, 9) : zwischen(2, 4), // Radius der Münze bzw. Kantenlänge des Funkens in Pixeln
+    winkel: zwischen(0, Math.PI * 2), // Drehwinkel der Münze (für den "Wende"-Effekt)
+    drehTempo: zwischen(4, 11), // Radiant pro Sekunde
+    schwere: istMuenze ? 1 : 0.45, // Funken sind leicht, sie fallen langsamer
     alter: 0,
-    leben: istMuenze ? 8 : zwischen(0.6, 1.4),             // Münzen leben, bis sie unten rausfallen; Funken verglühen
+    leben: istMuenze ? 8 : zwischen(0.6, 1.4), // Münzen leben, bis sie unten rausfallen; Funken verglühen
   };
   if (art === "regen") {
     p.x = zwischen(0, breite);
@@ -187,7 +191,7 @@ export function partikelNeu(art, breite, quelleX, quelleY, zufall = Math.random)
     p.vy = zwischen(60, 220);
   } else {
     // Fontäne: Winkel zwischen -150° und -30° (also nach oben), dazu ein zufälliges Tempo.
-    const richtung = zwischen(-Math.PI * 5 / 6, -Math.PI / 6);
+    const richtung = zwischen((-Math.PI * 5) / 6, -Math.PI / 6);
     const tempo = zwischen(260, 760);
     p.x = quelleX;
     p.y = quelleY;
@@ -205,12 +209,12 @@ export function partikelNeu(art, breite, quelleX, quelleY, zufall = Math.random)
  * Objekte pro Sekunde, die der Garbage Collector wegräumen müsste.
  */
 export function partikelSchritt(p, dt, gravitation = GRAVITATION) {
-  p.vy += gravitation * p.schwere * dt;       // 1. Beschleunigung: die Schwerkraft zieht nach unten
-  p.vx -= p.vx * WIDERSTAND * dt;             //    Luftwiderstand bremst die Seitwärtsbewegung
-  p.x += p.vx * dt;                           // 2. Geschwindigkeit: der Ort wandert mit
+  p.vy += gravitation * p.schwere * dt; // 1. Beschleunigung: die Schwerkraft zieht nach unten
+  p.vx -= p.vx * WIDERSTAND * dt; //    Luftwiderstand bremst die Seitwärtsbewegung
+  p.x += p.vx * dt; // 2. Geschwindigkeit: der Ort wandert mit
   p.y += p.vy * dt;
-  p.winkel += p.drehTempo * dt;               // 3. Die Münze dreht sich weiter
-  p.alter += dt;                              // 4. Das Partikel wird älter
+  p.winkel += p.drehTempo * dt; // 3. Die Münze dreht sich weiter
+  p.alter += dt; // 4. Das Partikel wird älter
 }
 
 /** Lebt das Partikel noch? Tot ist es, wenn es zu alt ist oder unten aus dem Bild fiel. */
@@ -238,7 +242,7 @@ function partikelSystemBauen(canvas, farbe, zufall = Math.random) {
     hoehe = canvas.clientHeight;
     canvas.width = Math.max(1, Math.round(breite * dpr));
     canvas.height = Math.max(1, Math.round(hoehe * dpr));
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);       // ab jetzt kann man in CSS-Pixeln malen
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // ab jetzt kann man in CSS-Pixeln malen
   }
   groesseAnpassen();
 
@@ -287,7 +291,13 @@ function partikelSystemBauen(canvas, farbe, zufall = Math.random) {
     zeichnen();
   }
 
-  return { ausstossen, schritt, groesseAnpassen, anzahl: () => liste.length, groesse: () => ({ breite, hoehe }) };
+  return {
+    ausstossen,
+    schritt,
+    groesseAnpassen,
+    anzahl: () => liste.length,
+    groesse: () => ({ breite, hoehe }),
+  };
 }
 
 /* ============================================================
@@ -335,9 +345,9 @@ function bereichMessen(buehne) {
  */
 function ueberspringenAnmelden(beiUeberspringen) {
   const taste = (e) => {
-    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;           // Dauerdruck und Browser-Kürzel nicht
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return; // Dauerdruck und Browser-Kürzel nicht
     if (["Shift", "Control", "Alt", "Meta", "Tab"].includes(e.key)) return;
-    if (e.key === " ") e.preventDefault();                                // die Leertaste soll die Seite nicht scrollen
+    if (e.key === " ") e.preventDefault(); // die Leertaste soll die Seite nicht scrollen
     beiUeberspringen();
   };
   const zeiger = (e) => {
@@ -388,7 +398,10 @@ export async function gewinnFeiern({ buehne, betrag, einsatz, zusatz = "" }) {
   // Stufe 1 und "Bewegung reduzieren" zeigen nur das Banner (Klasse stufe-1);
   // Stufe 2 und 3 zeigen das große Overlay mit Betrag.
   const nurBanner = reduziert || stufe === 1;
-  const wurzel = el("div", `gewinnfeier ${nurBanner ? "stufe-1" : `stufe-${stufe}`}${reduziert ? " reduziert" : ""}`);
+  const wurzel = el(
+    "div",
+    `gewinnfeier ${nurBanner ? "stufe-1" : `stufe-${stufe}`}${reduziert ? " reduziert" : ""}`,
+  );
   wurzel.style.height = `${hoehe}px`;
   wurzel.style.setProperty("--gf-y", `${fokusY}px`);
   // Die sichtbaren Teile sind Deko für die Augen; Screenreader bekommen stattdessen EINEN ruhigen Satz (gf-sr).
@@ -466,10 +479,13 @@ export async function gewinnFeiern({ buehne, betrag, einsatz, zusatz = "" }) {
       betragElement.textContent = zahlText(endbetrag);
       const ausblenden = grund === "ende" ? AUSBLENDEN_MS : AUSBLENDEN_SKIP_MS;
       wurzel.classList.add(grund === "ende" ? "weg" : "weg-schnell");
-      setTimeout(() => {
-        wurzel.remove();
-        fertig(stufe);
-      }, grund === "abbrechen" ? 0 : ausblenden);
+      setTimeout(
+        () => {
+          wurzel.remove();
+          fertig(stufe);
+        },
+        grund === "abbrechen" ? 0 : ausblenden,
+      );
     }
 
     const abmelden = ueberspringenAnmelden(() => beenden("ueberspringen"));
@@ -488,13 +504,13 @@ export async function gewinnFeiern({ buehne, betrag, einsatz, zusatz = "" }) {
     // requestAnimationFrame ruft `bild` einmal pro Bildschirm-Frame auf. Alles hängt an der ECHTEN
     // Zeit (jetzt - start), nicht an der Anzahl der Frames: gleiche Dauer auf 60 und 144 Hz.
     let letzterFrame = start;
-    let ausstossRest = 0;        // Bruchteil eines noch nicht ausgestoßenen Partikels (Rate x dt ist selten ganzzahlig)
+    let ausstossRest = 0; // Bruchteil eines noch nicht ausgestoßenen Partikels (Rate x dt ist selten ganzzahlig)
     let knallGezeigt = false;
-    let naechsterStoss = 0;      // Zeitpunkt (ms) des nächsten Fontänen-Stoßes; 0 = der große erste Stoß beim Start
+    let naechsterStoss = 0; // Zeitpunkt (ms) des nächsten Fontänen-Stoßes; 0 = der große erste Stoß beim Start
     function bild(jetzt) {
       if (beendet) return;
       const vergangen = jetzt - start;
-      const dt = Math.min((jetzt - letzterFrame) / 1000, 0.05);   // höchstens 50 ms: nach einem Ruckler nicht "teleportieren"
+      const dt = Math.min((jetzt - letzterFrame) / 1000, 0.05); // höchstens 50 ms: nach einem Ruckler nicht "teleportieren"
       letzterFrame = jetzt;
 
       // 1. Ticker: Betrag hochzählen
@@ -503,7 +519,7 @@ export async function gewinnFeiern({ buehne, betrag, einsatz, zusatz = "" }) {
       betragElement.textContent = zahlText(endbetrag * anteil);
       if (tickerT >= 1 && !knallGezeigt) {
         knallGezeigt = true;
-        wurzel.classList.add("fertig");          // CSS lässt den Endbetrag einmal "einschlagen"
+        wurzel.classList.add("fertig"); // CSS lässt den Endbetrag einmal "einschlagen"
       }
 
       // 2. Partikel (nur Stufe 3): am Anfang eine große Fontäne, danach gleichmäßiger Regen bis kurz vor
@@ -515,7 +531,7 @@ export async function gewinnFeiern({ buehne, betrag, einsatz, zusatz = "" }) {
           naechsterStoss = naechsterStoss === 0 ? 1400 : naechsterStoss + 1400;
         }
         if (vergangen < dauerMs - 900) {
-          ausstossRest += 24 * dt;                // 24 Regen-Partikel pro Sekunde
+          ausstossRest += 24 * dt; // 24 Regen-Partikel pro Sekunde
           const ganze = Math.floor(ausstossRest);
           ausstossRest -= ganze;
           partikel.ausstossen("regen", ganze, 0, 0);

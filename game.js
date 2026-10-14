@@ -88,20 +88,32 @@ import { bewegungReduziert, toplisteAnzeigen, stillEintragen } from "./assets/ui
 import { gewinnFeiern, stufeBestimmen } from "./assets/gewinnfeier.js";
 import { risikoAnbieten, RISIKO_TIMEOUT_MS } from "./assets/risiko.js";
 import {
-  klangSpinStart, klangWalzenStopp, klangSpannung, klangFastGewinn,
-  klangGewinn, klangMuenzTick, tonKnopf,
+  klangSpinStart,
+  klangWalzenStopp,
+  klangSpannung,
+  klangFastGewinn,
+  klangGewinn,
+  klangMuenzTick,
+  tonKnopf,
 } from "./assets/klang.js";
 import { lade, speichere, entferne } from "./assets/storage.js";
 import {
-  STARTGELD, kontostand, statistik, einsatzAbbuchen, rundeAbschliessen,
-  istPleite, pleiteNeustart, walletHud, walletHudAktualisieren,
+  STARTGELD,
+  kontostand,
+  statistik,
+  einsatzAbbuchen,
+  rundeAbschliessen,
+  istPleite,
+  pleiteNeustart,
+  walletHud,
+  walletHudAktualisieren,
 } from "./assets/wallet.js";
 
-const SPIEL = "slots";                          // Schlüssel für storage.js (Topliste, Einsatz)
-const SPANNUNG_REDUZIERT_MS = 150;              // Spannungs-Pause bei "Bewegung reduzieren" (höchstens 0,3 s erlaubt)
-const MUENZ_TICK_ABSTAND_MS = 70;               // Münz-Ticks höchstens so oft (gedrosselt, sonst wird es Dauerrattern)
-const MINDEST_NETTO_FUER_TOPLISTE = 100;        // kleinere Gewinne füllen die Topliste nicht (und öffnen keinen Dialog)
-const RISIKO_MAX_BETRAG = 5000;                 // Obergrenze des Risiko-Features: darüber wird nie ausgezahlt
+const SPIEL = "slots"; // Schlüssel für storage.js (Topliste, Einsatz)
+const SPANNUNG_REDUZIERT_MS = 150; // Spannungs-Pause bei "Bewegung reduzieren" (höchstens 0,3 s erlaubt)
+const MUENZ_TICK_ABSTAND_MS = 70; // Münz-Ticks höchstens so oft (gedrosselt, sonst wird es Dauerrattern)
+const MINDEST_NETTO_FUER_TOPLISTE = 100; // kleinere Gewinne füllen die Topliste nicht (und öffnen keinen Dialog)
+const RISIKO_MAX_BETRAG = 5000; // Obergrenze des Risiko-Features: darüber wird nie ausgezahlt
 
 /* ============================================================
    TEIL 1: REINE SPIELLOGIK (ohne DOM)
@@ -126,7 +138,12 @@ export const SYMBOL_NAMEN = {
  * Kurznamen, damit die Walzenbänder unten lesbar bleiben.
  * (Jede Zeile hat genau 20 Einträge – das lässt sich beim Lesen leicht nachzählen.)
  */
-const KIR = "kirsche", ZIT = "zitrone", MEL = "melone", GLO = "glocke", STE = "stern", SIE = "sieben";
+const KIR = "kirsche",
+  ZIT = "zitrone",
+  MEL = "melone",
+  GLO = "glocke",
+  STE = "stern",
+  SIE = "sieben";
 
 /**
  * Die drei Walzenbänder. Das Band ist RINGFÖRMIG gedacht: Nach dem letzten
@@ -139,9 +156,72 @@ const KIR = "kirsche", ZIT = "zitrone", MEL = "melone", GLO = "glocke", STE = "s
  * keinen Einfluss, weil jeder Stopp-Index gleich wahrscheinlich ist.
  */
 export const WALZENBAENDER = [
-  [KIR, KIR, ZIT, MEL, KIR, GLO, KIR, ZIT, KIR, STE, KIR, KIR, SIE, MEL, KIR, ZIT, KIR, GLO, STE, KIR],
-  [KIR, GLO, KIR, KIR, ZIT, KIR, STE, KIR, MEL, KIR, ZIT, KIR, SIE, STE, KIR, KIR, ZIT, MEL, KIR, GLO],
-  [KIR, STE, KIR, MEL, KIR, ZIT, KIR, KIR, SIE, GLO, KIR, ZIT, STE, KIR, GLO, KIR, KIR, ZIT, MEL, KIR],
+  [
+    KIR,
+    KIR,
+    ZIT,
+    MEL,
+    KIR,
+    GLO,
+    KIR,
+    ZIT,
+    KIR,
+    STE,
+    KIR,
+    KIR,
+    SIE,
+    MEL,
+    KIR,
+    ZIT,
+    KIR,
+    GLO,
+    STE,
+    KIR,
+  ],
+  [
+    KIR,
+    GLO,
+    KIR,
+    KIR,
+    ZIT,
+    KIR,
+    STE,
+    KIR,
+    MEL,
+    KIR,
+    ZIT,
+    KIR,
+    SIE,
+    STE,
+    KIR,
+    KIR,
+    ZIT,
+    MEL,
+    KIR,
+    GLO,
+  ],
+  [
+    KIR,
+    STE,
+    KIR,
+    MEL,
+    KIR,
+    ZIT,
+    KIR,
+    KIR,
+    SIE,
+    GLO,
+    KIR,
+    ZIT,
+    STE,
+    KIR,
+    GLO,
+    KIR,
+    KIR,
+    ZIT,
+    MEL,
+    KIR,
+  ],
 ];
 
 /** Dreier-Quoten: Auszahlung = Quote x Einsatz (bei 3 gleichen Symbolen auf der Linie). */
@@ -238,14 +318,14 @@ export function rtpBerechnen(baender = WALZENBAENDER) {
    gelaufen ist. Das Symbol auf der Gewinnlinie ist dann Index
    (start - vorschub) modulo Bandlänge. */
 
-const BREMS_WEG = 2.5;      // so viele Felder legt die Walze in der Bremsphase zurück
-const BREMS_ZEIT = 0.5;     // Sekunden für die Bremsphase
-const BOUNCE = 1.3;         // Stärke des Überschwingens (0 = gar nicht, 1,7 = deutlich)
+const BREMS_WEG = 2.5; // so viele Felder legt die Walze in der Bremsphase zurück
+const BREMS_ZEIT = 0.5; // Sekunden für die Bremsphase
+const BOUNCE = 1.3; // Stärke des Überschwingens (0 = gar nicht, 1,7 = deutlich)
 /* Ableitung (= Anfangsgeschwindigkeit) von easeOutBack bei x=0 ist BOUNCE+3.
    Rollt die Walze genau so schnell, geht sie ohne Ruck in die Bremsphase über. */
-const LAUF_TEMPO = BREMS_WEG * (BOUNCE + 3) / BREMS_ZEIT;   // Felder pro Sekunde (hier 21,5)
-const ERSTE_WALZE_MINDESTLAUF = 0.4;   // Sekunden Rollen, bevor die erste Walze bremst
-const WALZEN_ABSTAND = 0.25;           // jede weitere Walze rollt mindestens so viel länger
+const LAUF_TEMPO = (BREMS_WEG * (BOUNCE + 3)) / BREMS_ZEIT; // Felder pro Sekunde (hier 21,5)
+const ERSTE_WALZE_MINDESTLAUF = 0.4; // Sekunden Rollen, bevor die erste Walze bremst
+const WALZEN_ABSTAND = 0.25; // jede weitere Walze rollt mindestens so viel länger
 
 /** easeOutBack: läuft von 0 nach 1, überschwingt kurz über 1 und federt zurück. */
 function easeOutBack(x, bounce = BOUNCE) {
@@ -262,10 +342,10 @@ function easeOutBack(x, bounce = BOUNCE) {
    Stopp, kein Walzenband und keine Wahrscheinlichkeit. Der Spannungs-Stopp
    verändert allein die ZEIT, in der die dritte Walze ausläuft. */
 
-export const SPANNUNG_EXTRA_MIN = 0.8;   // Sekunden, die Walze 3 länger braucht als ohne Spannung (untere Grenze)
-export const SPANNUNG_EXTRA_MAX = 1.2;   // ... und obere Grenze
-const SPANNUNG_PAUSE = 0.08;             // Walze 3 bremst erst, wenn Walze 2 so lange ruht (das Paar soll sichtbar stehen)
-const SPANNUNG_BOUNCE = 0.5;             // sanfteres Zurückfedern bei der langen Bremsphase (sonst schwingt sie zu weit)
+export const SPANNUNG_EXTRA_MIN = 0.8; // Sekunden, die Walze 3 länger braucht als ohne Spannung (untere Grenze)
+export const SPANNUNG_EXTRA_MAX = 1.2; // ... und obere Grenze
+const SPANNUNG_PAUSE = 0.08; // Walze 3 bremst erst, wenn Walze 2 so lange ruht (das Paar soll sichtbar stehen)
+const SPANNUNG_BOUNCE = 0.5; // sanfteres Zurückfedern bei der langen Bremsphase (sonst schwingt sie zu weit)
 
 /**
  * Spannungs-Stopp ("noch eins!"): Stehen nach Walze 1 und 2 zwei GLEICHE Symbole
@@ -293,12 +373,12 @@ export function spannungExtraWuerfeln(zufall = Math.random) {
  */
 export function fastGewinnPruefen(stopps, baender = WALZENBAENDER) {
   const linie = linieAusStopps(stopps, baender);
-  if (gewinnAuswerten(linie).art !== "nichts") return null;   // bei einem Gewinn gibt es nichts zu bedauern
+  if (gewinnAuswerten(linie).art !== "nichts") return null; // bei einem Gewinn gibt es nichts zu bedauern
   if (linie[0] !== linie[1]) return null;
   const symbol = linie[0];
   const band = baender[2];
   const n = band.length;
-  const oben = band[(stopps[2] - 1 + n) % n] === symbol;       // Ringband: vor Index 0 kommt der letzte
+  const oben = band[(stopps[2] - 1 + n) % n] === symbol; // Ringband: vor Index 0 kommt der letzte
   const unten = band[(stopps[2] + 1) % n] === symbol;
   if (!oben && !unten) return null;
   return { symbol, oben, unten, richtung: oben && unten ? "beide" : oben ? "oben" : "unten" };
@@ -323,7 +403,16 @@ function spannungsPlanErstellen(normal, davor, extra) {
   const bremsZeit = ende - laufzeit;
   const tempo = normal.strecke / (laufzeit + bremsZeit / (bounce + 3));
   const bremsWeg = (tempo * bremsZeit) / (bounce + 3);
-  return { start: normal.start, strecke: normal.strecke, laufzeit, ende, tempo, bremsWeg, bremsZeit, bounce };
+  return {
+    start: normal.start,
+    strecke: normal.strecke,
+    laufzeit,
+    ende,
+    tempo,
+    bremsWeg,
+    bremsZeit,
+    bounce,
+  };
 }
 
 /**
@@ -347,14 +436,20 @@ export function laufPlanErstellen(start, ziel, laengen, spannung = null) {
   const plaene = [];
   for (let i = 0; i < ziel.length; i++) {
     const n = laengen[i];
-    const rest = (((start[i] - ziel[i]) % n) + n) % n;      // Rest-Strecke bis zum Ziel (immer 0 … n-1)
+    const rest = (((start[i] - ziel[i]) % n) + n) % n; // Rest-Strecke bis zum Ziel (immer 0 … n-1)
     const mindestLauf = i === 0 ? ERSTE_WALZE_MINDESTLAUF : plaene[i - 1].laufzeit + WALZEN_ABSTAND;
     let strecke = rest;
     while ((strecke - BREMS_WEG) / LAUF_TEMPO < mindestLauf) strecke += n;
     const laufzeit = (strecke - BREMS_WEG) / LAUF_TEMPO;
     let plan = {
-      start: start[i], strecke, laufzeit, ende: laufzeit + BREMS_ZEIT,
-      tempo: LAUF_TEMPO, bremsWeg: BREMS_WEG, bremsZeit: BREMS_ZEIT, bounce: BOUNCE,
+      start: start[i],
+      strecke,
+      laufzeit,
+      ende: laufzeit + BREMS_ZEIT,
+      tempo: LAUF_TEMPO,
+      bremsWeg: BREMS_WEG,
+      bremsZeit: BREMS_ZEIT,
+      bounce: BOUNCE,
     };
     if (spannung && spannung.walze === i && i === ziel.length - 1 && i > 0) {
       plan = spannungsPlanErstellen(plan, plaene[i - 1], spannung.extra);
@@ -366,9 +461,9 @@ export function laufPlanErstellen(start, ziel, laengen, spannung = null) {
 
 /** Zurückgelegte Strecke (in Feldern) einer Walze zum Zeitpunkt t (Sekunden seit Start). */
 export function vorschubZurZeit(plan, t) {
-  if (t <= plan.laufzeit) return plan.tempo * Math.max(t, 0);                  // Phase 1: gleichmäßig rollen
-  const x = Math.min((t - plan.laufzeit) / plan.bremsZeit, 1);                 // Phase 2: Fortschritt 0 … 1
-  return (plan.strecke - plan.bremsWeg) + plan.bremsWeg * easeOutBack(x, plan.bounce);
+  if (t <= plan.laufzeit) return plan.tempo * Math.max(t, 0); // Phase 1: gleichmäßig rollen
+  const x = Math.min((t - plan.laufzeit) / plan.bremsZeit, 1); // Phase 2: Fortschritt 0 … 1
+  return plan.strecke - plan.bremsWeg + plan.bremsWeg * easeOutBack(x, plan.bounce);
 }
 
 /** Zahl mit Tausenderpunkt: 1250 -> "1.250". */
@@ -384,7 +479,7 @@ export const TABELLE_ZEILEN = [
   { id: "melone", symbole: ["melone", "melone", "melone"], quote: DREIER_QUOTEN.melone },
   { id: "zitrone", symbole: ["zitrone", "zitrone", "zitrone"], quote: DREIER_QUOTEN.zitrone },
   { id: "kirsche", symbole: ["kirsche", "kirsche", "kirsche"], quote: DREIER_QUOTEN.kirsche },
-  { id: "kirschpaar", symbole: ["kirsche", "kirsche", null], quote: KIRSCHPAAR_QUOTE },   // null = egal (keine Kirsche)
+  { id: "kirschpaar", symbole: ["kirsche", "kirsche", null], quote: KIRSCHPAAR_QUOTE }, // null = egal (keine Kirsche)
 ];
 
 /* ============================================================
@@ -474,12 +569,14 @@ function starteSpiel() {
   const laengen = WALZENBAENDER.map((band) => band.length);
 
   // ----- Spielzustand -----
-  let laeuft = false;                 // true, solange gedreht wird: alles gesperrt
-  let stopps = zufallsStopps();       // aktuelle Stopp-Indizes (Startbild: zufällig, hat keinen Einfluss aufs Geld)
-  let offeneRunde = null;             // { einsatz, auszahlung, abgerechnet } während eines Drehs; auszahlung = aktuell SICHERER Betrag
+  let laeuft = false; // true, solange gedreht wird: alles gesperrt
+  let stopps = zufallsStopps(); // aktuelle Stopp-Indizes (Startbild: zufällig, hat keinen Einfluss aufs Geld)
+  let offeneRunde = null; // { einsatz, auszahlung, abgerechnet } während eines Drehs; auszahlung = aktuell SICHERER Betrag
   const risikoTimeoutMs = risikoTimeoutLesen();
   const gespeicherterEinsatz = lade(SPIEL, "einsatz", EINSATZSTUFEN[0]);
-  let gewaehlterEinsatz = EINSATZSTUFEN.includes(gespeicherterEinsatz) ? gespeicherterEinsatz : EINSATZSTUFEN[0];
+  let gewaehlterEinsatz = EINSATZSTUFEN.includes(gespeicherterEinsatz)
+    ? gespeicherterEinsatz
+    : EINSATZSTUFEN[0];
 
   // ---------------------------------------------------------
   // Walzen aufbauen und positionieren
@@ -522,7 +619,8 @@ function starteSpiel() {
     const n = laengen[walzenNr];
     const m = ((position % n) + n) % n;
     const prozent = ((m + n - 1) / (3 * n)) * 100;
-    walzenElemente[walzenNr].querySelector(".band").style.transform = `translate3d(0, ${-prozent}%, 0)`;
+    walzenElemente[walzenNr].querySelector(".band").style.transform =
+      `translate3d(0, ${-prozent}%, 0)`;
   }
 
   function alleWalzenSetzen() {
@@ -547,7 +645,7 @@ function starteSpiel() {
    * ist er also wieder da.
    */
   function wirksamerEinsatz() {
-    if (offeneRunde) return offeneRunde.einsatz;       // mitten im Dreh gilt der bereits abgebuchte Einsatz
+    if (offeneRunde) return offeneRunde.einsatz; // mitten im Dreh gilt der bereits abgebuchte Einsatz
     const stand = kontostand();
     if (gewaehlterEinsatz <= stand) return gewaehlterEinsatz;
     const leistbar = EINSATZSTUFEN.filter((stufe) => stufe <= stand);
@@ -560,7 +658,7 @@ function starteSpiel() {
     chipKnoepfe.forEach((chip) => {
       const wert = Number(chip.dataset.einsatz);
       chip.setAttribute("aria-pressed", String(wert === wirksam));
-      chip.disabled = laeuft || wert > stand;          // gesperrt beim Drehen oder wenn zu teuer
+      chip.disabled = laeuft || wert > stand; // gesperrt beim Drehen oder wenn zu teuer
     });
     drehKnopf.disabled = laeuft || wirksam === 0;
     resetKnopf.disabled = laeuft;
@@ -578,7 +676,7 @@ function starteSpiel() {
   // ---------------------------------------------------------
   // Gewinntabelle (wird aus TABELLE_ZEILEN gebaut: eine Quelle der Wahrheit)
   // ---------------------------------------------------------
-  const betragElemente = [];     // { quote, element } zum späteren Aktualisieren
+  const betragElemente = []; // { quote, element } zum späteren Aktualisieren
 
   function tabelleAufbauen() {
     for (const zeile of TABELLE_ZEILEN) {
@@ -609,7 +707,9 @@ function starteSpiel() {
 
       li.append(symbole, quote, betrag);
       // Screenreader sollen "3 mal Kirsche, Quote 5" hören statt dreier leerer Grafiken
-      const beschreibung = zeile.symbole.map((id) => (id ? SYMBOL_NAMEN[id] : "beliebig")).join(", ");
+      const beschreibung = zeile.symbole
+        .map((id) => (id ? SYMBOL_NAMEN[id] : "beliebig"))
+        .join(", ");
       li.setAttribute("aria-label", `${beschreibung}: Quote ${zeile.quote}`);
       tabelleListe.append(li);
     }
@@ -640,7 +740,7 @@ function starteSpiel() {
 
   /** Setzt Text und Farbe (plus/minus) von Gewinn-Anzeige und HUD-Feld. */
   function ergebnisAnzeigen(netto) {
-    const text = netto > 0 ? `+${zahlText(netto)}` : `−${zahlText(Math.abs(netto))}`;   // echtes Minuszeichen
+    const text = netto > 0 ? `+${zahlText(netto)}` : `−${zahlText(Math.abs(netto))}`; // echtes Minuszeichen
     const art = netto > 0 ? "plus" : "minus";
     gewinnAnzeige.textContent = text;
     gewinnAnzeige.className = `gewinn-anzeige ${art}`;
@@ -662,9 +762,11 @@ function starteSpiel() {
   /** Entfernt alle Effekte des letzten Drehs (Gewinn, Spannung, "So knapp!"). */
   function effekteLoeschen() {
     fensterElement.classList.remove("gewinn", "gewinn-blinken", "spannung");
-    fensterElement.querySelectorAll(".zelle.gewinn-blinken, .zelle.spannung, .zelle.knapp").forEach((z) => {
-      z.classList.remove("gewinn-blinken", "spannung", "knapp");
-    });
+    fensterElement
+      .querySelectorAll(".zelle.gewinn-blinken, .zelle.spannung, .zelle.knapp")
+      .forEach((z) => {
+        z.classList.remove("gewinn-blinken", "spannung", "knapp");
+      });
     walzenElemente.forEach((w) => w.classList.remove("knapp-wackeln"));
     drehInfo.classList.remove("knapp");
     tabelleListe.querySelectorAll("li.treffer").forEach((li) => li.classList.remove("treffer"));
@@ -731,7 +833,7 @@ function starteSpiel() {
         plaene.forEach((plan, i) => {
           if (ruht[i]) return;
           if (t >= plan.ende) {
-            positionSetzen(i, ziel[i]);                      // exakt aufs Ziel (keine Rundungsreste)
+            positionSetzen(i, ziel[i]); // exakt aufs Ziel (keine Rundungsreste)
             walzenElemente[i].classList.remove("laeuft");
             ruht[i] = true;
             beiStopp(i);
@@ -777,7 +879,7 @@ function starteSpiel() {
     drehInfo.textContent = "Zwei gleiche … kommt noch eins?";
     let wiederholungen = 0;
     (function herzschlag() {
-      klingen(klangSpannung);                                // ein Riser dauert ca. 0,75 s
+      klingen(klangSpannung); // ein Riser dauert ca. 0,75 s
       if (++wiederholungen < 4) spannungTimer = setTimeout(herzschlag, 750);
     })();
   }
@@ -785,7 +887,9 @@ function starteSpiel() {
   function spannungBeenden() {
     clearTimeout(spannungTimer);
     fensterElement.classList.remove("spannung");
-    fensterElement.querySelectorAll(".zelle.spannung").forEach((z) => z.classList.remove("spannung"));
+    fensterElement
+      .querySelectorAll(".zelle.spannung")
+      .forEach((z) => z.classList.remove("spannung"));
   }
 
   /** Wird für jede Walze gerufen, sobald sie ruht: Stopp-Tick plus Spannung bzw. "So knapp!". */
@@ -802,7 +906,7 @@ function starteSpiel() {
     if (knapp.unten) nachbarn.push(feldBeiLinie(i, ziel[i], 1));
     nachbarn.forEach((feld) => feld?.classList.add("knapp"));
     if (!bewegungReduziert()) animationNeuStarten(walzenElemente[i], "knapp-wackeln");
-    setTimeout(() => klingen(klangFastGewinn), 140);        // kurz nach dem Stopp-Tick, damit sich beides nicht überdeckt
+    setTimeout(() => klingen(klangFastGewinn), 140); // kurz nach dem Stopp-Tick, damit sich beides nicht überdeckt
   }
 
   /**
@@ -895,7 +999,7 @@ function starteSpiel() {
     dialog.append(titel, text, betrag, aktionen);
 
     dialog.addEventListener("close", () => {
-      pleiteNeustart();                    // Konto zurück auf Startgeld, Pleiten-Zähler +1
+      pleiteNeustart(); // Konto zurück auf Startgeld, Pleiten-Zähler +1
       walletHudAktualisieren();
       dialog.remove();
       seiteAktualisieren();
@@ -913,15 +1017,15 @@ function starteSpiel() {
   async function drehen() {
     if (laeuft) return;
     const einsatz = wirksamerEinsatz();
-    if (einsatz === 0 || !einsatzAbbuchen(einsatz)) return;      // Konto reicht nicht: Dreh startet nicht
+    if (einsatz === 0 || !einsatzAbbuchen(einsatz)) return; // Konto reicht nicht: Dreh startet nicht
 
     laeuft = true;
     const fokusWar = document.activeElement;
-    klingen(klangSpinStart);                                     // der Klick/Tastendruck ist die Nutzer-Geste, die Browser für Audio verlangen
-    walletHudAktualisieren();                                    // der Einsatz verschwindet sofort vom Konto
+    klingen(klangSpinStart); // der Klick/Tastendruck ist die Nutzer-Geste, die Browser für Audio verlangen
+    walletHudAktualisieren(); // der Einsatz verschwindet sofort vom Konto
     steuerungAktualisieren();
     effekteLoeschen();
-    fensterElement.classList.add("dreht");                       // Lauflicht-Rahmen läuft schneller
+    fensterElement.classList.add("dreht"); // Lauflicht-Rahmen läuft schneller
     gewinnAnzeige.textContent = "";
     gewinnAnzeige.className = "gewinn-anzeige";
     drehInfo.textContent = "Die Walzen laufen …";
@@ -938,11 +1042,16 @@ function starteSpiel() {
     //     Prüfungen lesen es nur und ändern weder `ziel` noch irgendeine Wahrscheinlichkeit.
     //     Der Spannungs-Stopp streckt allein die ZEIT des Auslaufs; "So knapp!" ist eine
     //     Beobachtung, die nur auftritt, wenn der Zufall sie wirklich geliefert hat.
-    const spannung = spannungPruefen(linie) ? { walze: WALZENBAENDER.length - 1, extra: spannungExtraWuerfeln() } : null;
+    const spannung = spannungPruefen(linie)
+      ? { walze: WALZENBAENDER.length - 1, extra: spannungExtraWuerfeln() }
+      : null;
     const knapp = fastGewinnPruefen(ziel);
 
     // 2. Walzen laufen lassen (stoppen links nach rechts, bei Spannung bremst die dritte lange aus)
-    await walzenLaufenLassen(ziel, { spannung, beiStopp: (i) => walzeGestoppt(i, ziel, spannung, knapp) });
+    await walzenLaufenLassen(ziel, {
+      spannung,
+      beiStopp: (i) => walzeGestoppt(i, ziel, spannung, knapp),
+    });
     fensterElement.classList.remove("dreht");
 
     // 3. Anzeigen. Eine Niete (Auszahlung 0) wird sofort verbucht. Ein GEWINN dagegen erst NACH der
@@ -954,7 +1063,7 @@ function starteSpiel() {
       offeneRunde = null;
       walletHudAktualisieren();
     }
-    ergebnisAnzeigen(netto);                                     // ehrlich: ein Verlust von 10 bleibt "−10", egal wie es vorher geklungen hat
+    ergebnisAnzeigen(netto); // ehrlich: ein Verlust von 10 bleibt "−10", egal wie es vorher geklungen hat
     drehInfo.textContent = ergebnisTextBauen(ergebnis);
     if (knapp) {
       drehInfo.textContent = `So knapp! Das dritte Symbol lag direkt ${knapp.richtung === "oben" ? "über" : knapp.richtung === "unten" ? "unter" : "über und unter"} der Linie. ${drehInfo.textContent}`;
@@ -992,7 +1101,9 @@ function starteSpiel() {
         einsatz,
         maxBetrag: RISIKO_MAX_BETRAG,
         timeoutMs: risikoTimeoutMs,
-        beiAenderung: (sicher) => { if (offeneRunde) offeneRunde.auszahlung = sicher; },
+        beiAenderung: (sicher) => {
+          if (offeneRunde) offeneRunde.auszahlung = sicher;
+        },
       });
 
       // 3d. Jetzt erst gutschreiben: der Endbetrag, nicht der ursprüngliche Gewinn.
@@ -1008,7 +1119,7 @@ function starteSpiel() {
         // Das Risiko hat das Ergebnis verändert: Anzeige und Text auf den Endstand bringen.
         ergebnisAnzeigen(endbetrag - einsatz);
         if (endbetrag === 0) {
-          effekteLoeschen();                                    // die leuchtende Gewinnlinie wäre jetzt irreführend
+          effekteLoeschen(); // die leuchtende Gewinnlinie wäre jetzt irreführend
           drehInfo.textContent = `Risiko verloren: Der Gewinn von ${zahlText(auszahlung)} ist weg.`;
         } else {
           drehInfo.textContent = `Risiko gewonnen! Aus ${zahlText(auszahlung)} wurden ${zahlText(endbetrag)}.`;
@@ -1021,7 +1132,11 @@ function starteSpiel() {
     laeuft = false;
     steuerungAktualisieren();
     // Der Knopf war beim Sperren fokussiert und hat den Fokus verloren: Tastatur-Nutzer zurück an die Stelle holen
-    if (fokusWar instanceof HTMLButtonElement && document.activeElement === document.body && !fokusWar.disabled) {
+    if (
+      fokusWar instanceof HTMLButtonElement &&
+      document.activeElement === document.body &&
+      !fokusWar.disabled
+    ) {
       fokusWar.focus({ preventScroll: true });
     }
 
@@ -1051,8 +1166,8 @@ function starteSpiel() {
   });
 
   document.addEventListener("keydown", (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;   // Browser-Kürzel nicht stören, Dauerdruck ignorieren
-    if (document.querySelector("dialog[open]")) return;           // Dialog offen -> Tasten gehören ihm
+    if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return; // Browser-Kürzel nicht stören, Dauerdruck ignorieren
+    if (document.querySelector("dialog[open]")) return; // Dialog offen -> Tasten gehören ihm
     const tag = e.target instanceof Element ? e.target.tagName : "";
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
 
@@ -1060,10 +1175,10 @@ function starteSpiel() {
       // Auf einem fokussierten Knopf/Link/Aufklapper macht die Leertaste schon etwas
       // (anklicken). Dort NICHT zusätzlich drehen, sonst würde es doppelt ausgelöst.
       if (tag === "BUTTON" || tag === "A" || tag === "SUMMARY") return;
-      e.preventDefault();                                          // Seite nicht scrollen
+      e.preventDefault(); // Seite nicht scrollen
       drehen();
     } else if (/^[1-9]$/.test(e.key) && Number(e.key) <= EINSATZSTUFEN.length) {
-      einsatzWaehlen(EINSATZSTUFEN[Number(e.key) - 1]);       // Taste 1 = erster Chip, 2 = zweiter …
+      einsatzWaehlen(EINSATZSTUFEN[Number(e.key) - 1]); // Taste 1 = erster Chip, 2 = zweiter …
     }
   });
 
@@ -1103,13 +1218,13 @@ function starteSpiel() {
 
   // ----- Start -----
   walletHud(document.getElementById("wallet-hud"));
-  tonKnopf(kopfElement);                                       // Ton an/aus, Zustand gilt für alle Casino-Spiele
+  tonKnopf(kopfElement); // Ton an/aus, Zustand gilt für alle Casino-Spiele
   baenderAufbauen();
   alleWalzenSetzen();
   tabelleAufbauen();
   steuerungAktualisieren();
   seiteAktualisieren();
-  if (istPleite(EINSATZSTUFEN[0])) pleiteDialogZeigen();       // z. B. nach Seitenwechsel mit leerem Konto
+  if (istPleite(EINSATZSTUFEN[0])) pleiteDialogZeigen(); // z. B. nach Seitenwechsel mit leerem Konto
 }
 
 // Nur im Browser starten. In Node (Tests/Simulation) gibt es kein "document" –

@@ -9,137 +9,333 @@
 /* Das Wallet-HUD wird von wallet.js in #wallet-hud gebaut. display:contents
    heißt: Dieser Wrapper erzeugt selbst keine Box, seine Kinder (die drei
    .hud-feld) verhalten sich so, als lägen sie direkt in der .hud-Flexbox. */
-#wallet-hud{display:contents}
-.hud-feld .wert.plus{color:var(--lime)}
-.hud-feld .wert.minus{color:var(--pink)}
-
+#wallet-hud {
+  display: contents;
+}
+.hud-feld .wert.plus {
+  color: var(--lime);
+}
+.hud-feld .wert.minus {
+  color: var(--pink);
+}
 
 /* ---------- Walzenfenster ------------------------------------- */
 /* Drei gleich breite Spalten (Grid). Jede Walze ist dreimal so hoch wie breit
    (aspect-ratio 1/3) = genau drei quadratische Felder übereinander. */
-.walzenfenster{
-  position:relative;
-  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
-  max-width:360px;margin:4px auto 0;padding:10px;
-  border-radius:18px;
-  background:linear-gradient(180deg,#1d1d3f,#0e0e22);
-  border:2px solid color-mix(in srgb,var(--gold) 55%,var(--line));
-  box-shadow:inset 0 0 0 4px #0a0a18,0 0 26px color-mix(in srgb,var(--gold) 22%,transparent);
+.walzenfenster {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-width: 360px;
+  margin: 4px auto 0;
+  padding: 10px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #1d1d3f, #0e0e22);
+  border: 2px solid color-mix(in srgb, var(--gold) 55%, var(--line));
+  box-shadow:
+    inset 0 0 0 4px #0a0a18,
+    0 0 26px color-mix(in srgb, var(--gold) 22%, transparent);
 }
 
-.walze{
-  position:relative;overflow:hidden;           /* alles außerhalb der 3 Felder abschneiden */
-  align-self:start;aspect-ratio:1/3;
-  border-radius:10px;
-  background:linear-gradient(90deg,#0b0b1d,#17173a 50%,#0b0b1d);
-  box-shadow:inset 0 0 0 1px #ffffff10;
-  transition:box-shadow var(--schnell);
+.walze {
+  position: relative;
+  overflow: hidden; /* alles außerhalb der 3 Felder abschneiden */
+  align-self: start;
+  aspect-ratio: 1/3;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #0b0b1d, #17173a 50%, #0b0b1d);
+  box-shadow: inset 0 0 0 1px #ffffff10;
+  transition: box-shadow var(--schnell);
 }
 /* Walzenrundung: oben und unten dunkel, damit es wie eine Trommel wirkt */
-.walze::after{
-  content:"";position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(#000d,transparent 32%,transparent 68%,#000d);
+.walze::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(#000d, transparent 32%, transparent 68%, #000d);
 }
 /* Während die Walze läuft, leuchtet sie leicht in der Akzentfarbe */
-.walze.laeuft{box-shadow:inset 0 0 0 1px #ffffff10,inset 0 0 22px color-mix(in srgb,var(--gold) 22%,transparent)}
+.walze.laeuft {
+  box-shadow:
+    inset 0 0 0 1px #ffffff10,
+    inset 0 0 22px color-mix(in srgb, var(--gold) 22%, transparent);
+}
 
 /* Das Band: dreimal das Walzenband untereinander. Die Position setzt game.js per
    transform (Prozent der eigenen Höhe). will-change:transform sagt dem Browser,
    dass sich das Element dauernd bewegt → eigene Grafikebene, flüssigere Animation. */
-.band{position:absolute;left:0;right:0;top:0;will-change:transform}
+.band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  will-change: transform;
+}
 /* Ein Feld ist immer quadratisch (Breite = Walzenbreite) */
-.zelle{aspect-ratio:1;display:grid;place-items:center}
-.zelle svg{width:78%;height:78%;display:block;filter:drop-shadow(0 2px 3px #0009)}
+.zelle {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+.zelle svg {
+  width: 78%;
+  height: 78%;
+  display: block;
+  filter: drop-shadow(0 2px 3px #0009);
+}
 
 /* ---------- Gewinnlinie ---------------------------------------- */
 /* Eine waagerechte Linie genau in der Mitte des Fensters (top:50%).
    Weil Fenster und Walzen gleich viel Rand oben und unten haben, trifft sie
    exakt die Mitte der mittleren Symbolreihe. */
-.gewinnlinie{
-  position:absolute;left:3px;right:3px;top:50%;height:3px;translate:0 -50%;
-  border-radius:2px;pointer-events:none;z-index:2;
-  background:color-mix(in srgb,var(--gold) 38%,transparent);
-  transition:background var(--schnell),box-shadow var(--schnell);
+.gewinnlinie {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  top: 50%;
+  height: 3px;
+  translate: 0 -50%;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 2;
+  background: color-mix(in srgb, var(--gold) 38%, transparent);
+  transition:
+    background var(--schnell),
+    box-shadow var(--schnell);
 }
 /* kleine Pfeilspitzen links und rechts, wie bei echten Automaten */
-.gewinnlinie::before,.gewinnlinie::after{
-  content:"";position:absolute;top:50%;translate:0 -50%;
-  border:6px solid transparent;
+.gewinnlinie::before,
+.gewinnlinie::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  border: 6px solid transparent;
 }
-.gewinnlinie::before{left:-3px;border-left-color:var(--gold);border-right-width:0}
-.gewinnlinie::after{right:-3px;border-right-color:var(--gold);border-left-width:0}
+.gewinnlinie::before {
+  left: -3px;
+  border-left-color: var(--gold);
+  border-right-width: 0;
+}
+.gewinnlinie::after {
+  right: -3px;
+  border-right-color: var(--gold);
+  border-left-width: 0;
+}
 
 /* Treffer: Linie leuchtet dauerhaft ... */
-.walzenfenster.gewinn .gewinnlinie{
-  background:var(--gold);
-  box-shadow:0 0 12px var(--gold),0 0 30px color-mix(in srgb,var(--gold) 60%,transparent);
+.walzenfenster.gewinn .gewinnlinie {
+  background: var(--gold);
+  box-shadow:
+    0 0 12px var(--gold),
+    0 0 30px color-mix(in srgb, var(--gold) 60%, transparent);
 }
 /* ... und ein heller Lichtpunkt läuft dreimal von links nach rechts über die Linie
    ("Lichtlauf", wie bei echten Geräten: JEDER Treffer wird gefeiert, auch der kleinste).
    Der Punkt ist ein Farbverlauf, der über die goldene Linie wandert. Die Klasse
    .gewinn-blinken setzt game.js nur, wenn bewegungReduziert() false ist. */
-@keyframes linie-lauf{from{background-position:-70% 0,0 0}to{background-position:170% 0,0 0}}
-.walzenfenster.gewinn-blinken .gewinnlinie{
-  background:linear-gradient(90deg,transparent,#fff 50%,transparent) -70% 0 / 40% 100% no-repeat,var(--gold);
-  animation:linie-lauf .7s linear 3;
+@keyframes linie-lauf {
+  from {
+    background-position:
+      -70% 0,
+      0 0;
+  }
+  to {
+    background-position:
+      170% 0,
+      0 0;
+  }
+}
+.walzenfenster.gewinn-blinken .gewinnlinie {
+  background:
+    linear-gradient(90deg, transparent, #fff 50%, transparent) -70% 0 / 40% 100% no-repeat,
+    var(--gold);
+  animation: linie-lauf 0.7s linear 3;
 }
 
 /* Gewinnsymbole pulsieren (scale ist eine eigene Eigenschaft und kollidiert nicht mit transform) */
-@keyframes symbol-puls{from{scale:1;filter:brightness(1)}to{scale:1.2;filter:brightness(1.35)}}
-.zelle.gewinn-blinken svg{animation:symbol-puls .45s ease-in-out 6 alternate}
-
+@keyframes symbol-puls {
+  from {
+    scale: 1;
+    filter: brightness(1);
+  }
+  to {
+    scale: 1.2;
+    filter: brightness(1.35);
+  }
+}
+.zelle.gewinn-blinken svg {
+  animation: symbol-puls 0.45s ease-in-out 6 alternate;
+}
 
 /* ---------- Anzeigen und Steuerung unter dem Fenster ---------- */
-.gewinn-anzeige{margin:18px 0 0}
-.dreh-info{margin:4px 0 0;min-height:1.6em;text-align:center;font-weight:600}
-.einsatz-zeile{display:flex;flex-direction:column;align-items:center;margin-top:10px}
-.einsatz-label{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
-.einsatz-zeile .chips{justify-content:center;margin:8px 0 4px}
-.dreh-zeile{display:flex;justify-content:center;margin-top:10px}
-.dreh-knopf{width:min(100%,320px);min-height:58px;font-family:var(--pixel);font-weight:400;font-size:.95rem}
+.gewinn-anzeige {
+  margin: 18px 0 0;
+}
+.dreh-info {
+  margin: 4px 0 0;
+  min-height: 1.6em;
+  text-align: center;
+  font-weight: 600;
+}
+.einsatz-zeile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 10px;
+}
+.einsatz-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mut);
+}
+.einsatz-zeile .chips {
+  justify-content: center;
+  margin: 8px 0 4px;
+}
+.dreh-zeile {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+.dreh-knopf {
+  width: min(100%, 320px);
+  min-height: 58px;
+  font-family: var(--pixel);
+  font-weight: 400;
+  font-size: 0.95rem;
+}
 
-.klein{margin:6px 0 0;font-size:.85rem;color:var(--mut)}
-.knopf-reihe{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
-.hinweis-casino{margin-top:20px}
-
+.klein {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: var(--mut);
+}
+.knopf-reihe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+.hinweis-casino {
+  margin-top: 20px;
+}
 
 /* ---------- Gewinntabelle --------------------------------------- */
-.tabelle{margin-top:26px;padding-top:18px;border-top:1px solid var(--line)}
-.tabelle h2{margin:0;font-family:var(--pixel);font-weight:400;font-size:.8rem}
-.gewinnliste{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px;grid-template-columns:1fr}
-@media (min-width:640px){.gewinnliste{grid-template-columns:1fr 1fr}}
-.gewinnliste li{
-  display:flex;align-items:center;gap:12px;padding:6px 12px;border-radius:10px;
-  background:var(--panel2);border:1px solid var(--line);
-  transition:border-color var(--schnell),box-shadow var(--schnell);
+.tabelle {
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
 }
-.gewinnliste .symbole{display:flex;align-items:center;gap:2px}
-.gewinnliste .symbole svg{width:30px;height:30px;display:block}
+.tabelle h2 {
+  margin: 0;
+  font-family: var(--pixel);
+  font-weight: 400;
+  font-size: 0.8rem;
+}
+.gewinnliste {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) {
+  .gewinnliste {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.gewinnliste li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  transition:
+    border-color var(--schnell),
+    box-shadow var(--schnell);
+}
+.gewinnliste .symbole {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.gewinnliste .symbole svg {
+  width: 30px;
+  height: 30px;
+  display: block;
+}
 /* Platzhalter für "egal, was hier steht" beim Kirschpaar */
-.gewinnliste .joker{
-  width:30px;height:30px;display:grid;place-items:center;border-radius:6px;
-  border:1px dashed var(--line);color:var(--mut);font:600 .85rem var(--mono);
+.gewinnliste .joker {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  border: 1px dashed var(--line);
+  color: var(--mut);
+  font: 600 0.85rem var(--mono);
 }
-.gewinnliste .quote{font-family:var(--pixel);font-size:.7rem;color:var(--gold)}
-.gewinnliste .betrag{margin-left:auto;font-family:var(--mono);color:var(--mut)}
+.gewinnliste .quote {
+  font-family: var(--pixel);
+  font-size: 0.7rem;
+  color: var(--gold);
+}
+.gewinnliste .betrag {
+  margin-left: auto;
+  font-family: var(--mono);
+  color: var(--mut);
+}
 /* Zeile des letzten Treffers hervorheben */
-.gewinnliste li.treffer{
-  border-color:var(--gold);
-  box-shadow:0 0 14px color-mix(in srgb,var(--gold) 35%,transparent);
+.gewinnliste li.treffer {
+  border-color: var(--gold);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--gold) 35%, transparent);
 }
-.gewinnliste li.treffer .betrag{color:var(--gold)}
-
+.gewinnliste li.treffer .betrag {
+  color: var(--gold);
+}
 
 /* ---------- Tabelle in der Lernbox (RTP-Herleitung) ------------ */
-.rtp-tabelle{width:100%;border-collapse:collapse;margin:8px 0 14px;font-size:.88rem;color:var(--mut)}
-.rtp-tabelle th,.rtp-tabelle td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line)}
-.rtp-tabelle thead th{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase}
-.rtp-tabelle tbody th{font-weight:600;color:var(--txt)}
-.rtp-tabelle td{font-family:var(--mono)}
-.rtp-tabelle .summe th,.rtp-tabelle .summe td{color:var(--gold);border-bottom:0}
+.rtp-tabelle {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0 14px;
+  font-size: 0.88rem;
+  color: var(--mut);
+}
+.rtp-tabelle th,
+.rtp-tabelle td {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+.rtp-tabelle thead th {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.rtp-tabelle tbody th {
+  font-weight: 600;
+  color: var(--txt);
+}
+.rtp-tabelle td {
+  font-family: var(--mono);
+}
+.rtp-tabelle .summe th,
+.rtp-tabelle .summe td {
+  color: var(--gold);
+  border-bottom: 0;
+}
 /* auf schmalen Handys darf die Tabelle seitlich scrollen, statt die Seite zu sprengen */
-.lernbox details{overflow-x:auto}
-
+.lernbox details {
+  overflow-x: auto;
+}
 
 /* ---------- Lauflicht-Rahmen ----------------------------------- */
 /* Eine Kette kleiner Lämpchen läuft in der Fassung (dem 10px breiten Innenrand) um die Walzen.
@@ -149,74 +345,163 @@
    Je Kante eine Hintergrundebene (oben, unten, links, rechts): ein 6px breites Band, in dem
    sich ein Punkt-Farbverlauf wiederholt. Die Wanderung ist nur eine Verschiebung der
    Hintergrund-Position um genau einen Lämpchen-Abstand (12px) pro Schritt (steps(3)). */
-.walzenfenster::before,.walzenfenster::after{
-  content:"";position:absolute;inset:3px;border-radius:15px;pointer-events:none;
-  background-repeat:repeat-x,repeat-x,repeat-y,repeat-y;
-  background-position:0 0,0 100%,0 0,100% 0;
+.walzenfenster::before,
+.walzenfenster::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 15px;
+  pointer-events: none;
+  background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+  background-position:
+    0 0,
+    0 100%,
+    0 0,
+    100% 0;
 }
-.walzenfenster::before{
-  --lampe:color-mix(in srgb,var(--gold) 26%,transparent);
+.walzenfenster::before {
+  --lampe: color-mix(in srgb, var(--gold) 26%, transparent);
   background-image:
-    radial-gradient(circle at 6px 3px,var(--lampe) 0 2px,transparent 2.6px),
-    radial-gradient(circle at 6px 3px,var(--lampe) 0 2px,transparent 2.6px),
-    radial-gradient(circle at 3px 6px,var(--lampe) 0 2px,transparent 2.6px),
-    radial-gradient(circle at 3px 6px,var(--lampe) 0 2px,transparent 2.6px);
-  background-size:12px 6px,12px 6px,6px 12px,6px 12px;
+    radial-gradient(circle at 6px 3px, var(--lampe) 0 2px, transparent 2.6px),
+    radial-gradient(circle at 6px 3px, var(--lampe) 0 2px, transparent 2.6px),
+    radial-gradient(circle at 3px 6px, var(--lampe) 0 2px, transparent 2.6px),
+    radial-gradient(circle at 3px 6px, var(--lampe) 0 2px, transparent 2.6px);
+  background-size:
+    12px 6px,
+    12px 6px,
+    6px 12px,
+    6px 12px;
 }
-.walzenfenster::after{
-  --lampe:var(--gold);
+.walzenfenster::after {
+  --lampe: var(--gold);
   background-image:
-    radial-gradient(circle at 6px 3px,var(--lampe) 0 2px,transparent 2.6px),
-    radial-gradient(circle at 6px 3px,var(--lampe) 0 2px,transparent 2.6px),
-    radial-gradient(circle at 3px 6px,var(--lampe) 0 2px,transparent 2.6px),
-    radial-gradient(circle at 3px 6px,var(--lampe) 0 2px,transparent 2.6px);
-  background-size:36px 6px,36px 6px,6px 36px,6px 36px;      /* 36px = drei Lämpchen: nur jedes dritte leuchtet */
-  filter:drop-shadow(0 0 2px var(--gold));
+    radial-gradient(circle at 6px 3px, var(--lampe) 0 2px, transparent 2.6px),
+    radial-gradient(circle at 6px 3px, var(--lampe) 0 2px, transparent 2.6px),
+    radial-gradient(circle at 3px 6px, var(--lampe) 0 2px, transparent 2.6px),
+    radial-gradient(circle at 3px 6px, var(--lampe) 0 2px, transparent 2.6px);
+  background-size:
+    36px 6px,
+    36px 6px,
+    6px 36px,
+    6px 36px; /* 36px = drei Lämpchen: nur jedes dritte leuchtet */
+  filter: drop-shadow(0 0 2px var(--gold));
 }
 /* oben nach rechts, rechts nach unten, unten nach links, links nach oben = im Uhrzeigersinn */
-@keyframes lauflicht{
-  from{background-position:0 0,0 100%,0 0,100% 0}
-  to{background-position:36px 0,-36px 100%,0 -36px,100% 36px}
+@keyframes lauflicht {
+  from {
+    background-position:
+      0 0,
+      0 100%,
+      0 0,
+      100% 0;
+  }
+  to {
+    background-position:
+      36px 0,
+      -36px 100%,
+      0 -36px,
+      100% 36px;
+  }
 }
-@keyframes lauflicht-blitz{0%,100%{opacity:1}50%{opacity:.15}}
-@media (prefers-reduced-motion:no-preference){
-  .walzenfenster::after{animation:lauflicht 3s steps(3) infinite}        /* Leerlauf: ruhig */
-  .walzenfenster.dreht::after{animation-duration:.45s}                   /* beim Dreh: schnell */
-  .walzenfenster.spannung::after{animation-duration:.3s}                 /* Spannung: hektisch */
+@keyframes lauflicht-blitz {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.15;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .walzenfenster::after {
+    animation: lauflicht 3s steps(3) infinite;
+  } /* Leerlauf: ruhig */
+  .walzenfenster.dreht::after {
+    animation-duration: 0.45s;
+  } /* beim Dreh: schnell */
+  .walzenfenster.spannung::after {
+    animation-duration: 0.3s;
+  } /* Spannung: hektisch */
 }
 /* Treffer: alle Lämpchen golden an, bei Bewegung zusätzlich ein paar Mal blitzend */
-.walzenfenster.gewinn::after{
-  animation:none;
-  background-size:12px 6px,12px 6px,6px 12px,6px 12px;
-  filter:drop-shadow(0 0 4px var(--gold));
+.walzenfenster.gewinn::after {
+  animation: none;
+  background-size:
+    12px 6px,
+    12px 6px,
+    6px 12px,
+    6px 12px;
+  filter: drop-shadow(0 0 4px var(--gold));
 }
-@media (prefers-reduced-motion:no-preference){
-  .walzenfenster.gewinn-blinken::after{animation:lauflicht-blitz .35s ease-in-out 6}
+@media (prefers-reduced-motion: no-preference) {
+  .walzenfenster.gewinn-blinken::after {
+    animation: lauflicht-blitz 0.35s ease-in-out 6;
+  }
 }
 /* Walze 3 im Spannungs-Stopp: der Rahmen glimmt zusätzlich */
-.walzenfenster.spannung{box-shadow:inset 0 0 0 4px #0a0a18,0 0 30px color-mix(in srgb,var(--gold) 45%,transparent)}
-
+.walzenfenster.spannung {
+  box-shadow:
+    inset 0 0 0 4px #0a0a18,
+    0 0 30px color-mix(in srgb, var(--gold) 45%, transparent);
+}
 
 /* ---------- Spannungs-Stopp und "So knapp!" -------------------- */
 /* Die beiden stehenden Symbole leuchten golden (statisch); mit Bewegung pulsieren sie zusätzlich. */
-.zelle.spannung svg{filter:drop-shadow(0 0 7px var(--gold)) brightness(1.2)}
-@keyframes spannung-puls{from{scale:1}to{scale:1.2}}
-@media (prefers-reduced-motion:no-preference){
-  .zelle.spannung svg{animation:spannung-puls .38s ease-in-out infinite alternate}
+.zelle.spannung svg {
+  filter: drop-shadow(0 0 7px var(--gold)) brightness(1.2);
+}
+@keyframes spannung-puls {
+  from {
+    scale: 1;
+  }
+  to {
+    scale: 1.2;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .zelle.spannung svg {
+    animation: spannung-puls 0.38s ease-in-out infinite alternate;
+  }
 }
 
 /* Das knapp verpasste Symbol über/unter der Linie glimmt dezent, die Walze wackelt kurz. */
-.zelle.knapp svg{filter:drop-shadow(0 0 6px color-mix(in srgb,var(--gold) 80%,transparent)) brightness(1.15)}
-@keyframes knapp-wackeln{
-  0%,100%{translate:0 0;rotate:0deg}
-  15%{translate:-3px 0;rotate:-1.2deg}
-  35%{translate:3px 0;rotate:1.2deg}
-  55%{translate:-2px 0;rotate:-.8deg}
-  75%{translate:2px 0;rotate:.6deg}
+.zelle.knapp svg {
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--gold) 80%, transparent)) brightness(1.15);
 }
-.walze.knapp-wackeln{animation:knapp-wackeln .5s ease-in-out}
-.dreh-info.knapp{color:var(--gold);font-weight:500}   /* dezent: golden, aber nicht fett */
-
+@keyframes knapp-wackeln {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  15% {
+    translate: -3px 0;
+    rotate: -1.2deg;
+  }
+  35% {
+    translate: 3px 0;
+    rotate: 1.2deg;
+  }
+  55% {
+    translate: -2px 0;
+    rotate: -0.8deg;
+  }
+  75% {
+    translate: 2px 0;
+    rotate: 0.6deg;
+  }
+}
+.walze.knapp-wackeln {
+  animation: knapp-wackeln 0.5s ease-in-out;
+}
+.dreh-info.knapp {
+  color: var(--gold);
+  font-weight: 500;
+} /* dezent: golden, aber nicht fett */
 
 /* ---------- Ton-Knopf in der Kopfzeile -------------------------- */
-.ton-knopf{padding:8px 14px;font-size:.85rem;white-space:nowrap}
+.ton-knopf {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
