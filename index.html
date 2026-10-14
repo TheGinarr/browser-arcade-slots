@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07070f">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./assets/style.css">
+  <!-- spielspezifische Styles (Walzen, Gewinnlinie, Gewinntabelle) – das gemeinsame Design bleibt in ../assets/style.css -->
+  <link rel="stylesheet" href="./spiel.css">
+  <title>Slots · Browser-Arcade</title>
+  <meta name="description" content="Slots mit Spielgeld: drei Walzen, eine Gewinnlinie, sechs eigene Symbole. Lerne nebenbei, wie die Auszahlungsquote (RTP) berechnet wird. Ohne Konto und Cookies.">
+</head>
+<body style="--ak:var(--gold)">
+  <div class="raster" aria-hidden="true"></div>
+
+  <!--
+    SYMBOL-SPRITE: Die sechs Symbole werden EINMAL hier als <symbol> definiert.
+    game.js setzt sie dann per <use href="#sym-kirsche"> beliebig oft ein (Walzen und Gewinntabelle).
+    Der Sprite ist unsichtbar, aber NICHT mit display:none versteckt: Manche Browser zeichnen
+    Farbverläufe (gradient) aus display:none-SVGs nicht. Darum 0x0 Pixel groß, absolut positioniert.
+  -->
+  <svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true" focusable="false">
+    <defs>
+      <radialGradient id="sg-rot" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ff8a98"/><stop offset=".55" stop-color="#e0143c"/><stop offset="1" stop-color="#8f0a2a"/></radialGradient>
+      <linearGradient id="sg-gelb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff49a"/><stop offset=".5" stop-color="#ffd21e"/><stop offset="1" stop-color="#d79a00"/></linearGradient>
+      <linearGradient id="sg-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffeaa6"/><stop offset=".55" stop-color="#ffc84d"/><stop offset="1" stop-color="#c98a1a"/></linearGradient>
+      <linearGradient id="sg-stern" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c4fcff"/><stop offset=".5" stop-color="#00e5ff"/><stop offset="1" stop-color="#6a6dff"/></linearGradient>
+      <linearGradient id="sg-fleisch" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7f95"/><stop offset="1" stop-color="#e0143c"/></linearGradient>
+      <linearGradient id="sg-schale" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#63e56e"/><stop offset="1" stop-color="#1c8f3a"/></linearGradient>
+    </defs>
+
+    <!-- Kirsche: zwei Früchte, zwei Stiele, ein Blatt -->
+    <symbol id="sym-kirsche" viewBox="0 0 64 64">
+      <path d="M21 35 C22 22 32 14 45 9" fill="none" stroke="#7bd34a" stroke-width="3" stroke-linecap="round"/>
+      <path d="M44 37 C45 26 46 16 45 9" fill="none" stroke="#7bd34a" stroke-width="3" stroke-linecap="round"/>
+      <path d="M45 9 C52 3 60 6 61 12 C54 15 48 14 45 9 Z" fill="url(#sg-schale)"/>
+      <circle cx="21" cy="46" r="12" fill="url(#sg-rot)"/>
+      <circle cx="44" cy="49" r="12" fill="url(#sg-rot)"/>
+      <ellipse cx="16.5" cy="41" rx="3.2" ry="2" fill="#fff" opacity=".55" transform="rotate(-35 16.5 41)"/>
+      <ellipse cx="39.5" cy="44" rx="3.2" ry="2" fill="#fff" opacity=".55" transform="rotate(-35 39.5 44)"/>
+    </symbol>
+
+    <!-- Zitrone: schräg liegendes Oval mit zwei Spitzen -->
+    <symbol id="sym-zitrone" viewBox="0 0 64 64">
+      <g transform="rotate(-25 32 34)">
+        <path d="M4 34 C4 33 7 31 10 30 C14 20 24 15 32 15 C42 15 52 20 54 30 C57 31 60 33 60 34 C60 35 57 37 54 38 C52 48 42 53 32 53 C22 53 14 48 10 38 C7 37 4 35 4 34 Z" fill="url(#sg-gelb)" stroke="#b8860b" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M16 28 C20 22 27 20 33 20" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"/>
+      </g>
+    </symbol>
+
+    <!-- Melone: Halbkreis aus drei Schichten (Schale, helle Rinde, Fruchtfleisch) plus Kerne -->
+    <symbol id="sym-melone" viewBox="0 0 64 64">
+      <path d="M4 18 H60 A28 28 0 0 1 4 18 Z" fill="url(#sg-schale)"/>
+      <path d="M8 18 H56 A24 24 0 0 1 8 18 Z" fill="#e9ffd0"/>
+      <path d="M11 18 H53 A21 21 0 0 1 11 18 Z" fill="url(#sg-fleisch)"/>
+      <ellipse cx="23" cy="27" rx="1.9" ry="3.2" fill="#2a0a14" transform="rotate(-20 23 27)"/>
+      <ellipse cx="32" cy="32" rx="1.9" ry="3.2" fill="#2a0a14"/>
+      <ellipse cx="41" cy="27" rx="1.9" ry="3.2" fill="#2a0a14" transform="rotate(20 41 27)"/>
+      <ellipse cx="28" cy="38" rx="1.9" ry="3.2" fill="#2a0a14" transform="rotate(-10 28 38)"/>
+      <ellipse cx="37" cy="38" rx="1.9" ry="3.2" fill="#2a0a14" transform="rotate(10 37 38)"/>
+    </symbol>
+
+    <!-- Glocke: Körper, Rand, Klöppel, Glanzstreifen -->
+    <symbol id="sym-glocke" viewBox="0 0 64 64">
+      <circle cx="32" cy="9" r="4" fill="url(#sg-gold)" stroke="#a8680f" stroke-width="1.4"/>
+      <path d="M32 12 C20 12 17 24 17 34 C17 43 13 46 10 49 H54 C51 46 47 43 47 34 C47 24 44 12 32 12 Z" fill="url(#sg-gold)" stroke="#a8680f" stroke-width="1.6" stroke-linejoin="round"/>
+      <rect x="9" y="47" width="46" height="6" rx="3" fill="url(#sg-gold)" stroke="#a8680f" stroke-width="1.6"/>
+      <circle cx="32" cy="57" r="5" fill="#c98a1a" stroke="#a8680f" stroke-width="1.5"/>
+      <path d="M24 22 C21 28 21 34 21 40" fill="none" stroke="#fff" stroke-opacity=".65" stroke-width="3" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- Stern: Fünfzack, innen ein kleiner heller Zweitstern als Glanz -->
+    <symbol id="sym-stern" viewBox="0 0 64 64">
+      <polygon points="32.0,8.0 38.8,25.7 57.7,26.7 42.9,38.6 47.9,56.8 32.0,46.5 16.1,56.8 21.1,38.6 6.3,26.7 25.2,25.7" fill="url(#sg-stern)" stroke="#e9fdff" stroke-width="1.6" stroke-linejoin="round"/>
+      <polygon points="32.0,8.0 38.8,25.7 57.7,26.7 42.9,38.6 47.9,56.8 32.0,46.5 16.1,56.8 21.1,38.6 6.3,26.7 25.2,25.7" fill="#fff" opacity=".35" transform="translate(32 35) scale(.42) translate(-32 -35)"/>
+    </symbol>
+
+    <!-- Neon-7: derselbe Pfad dreimal übereinander (breiter Schein, kräftige Röhre, heller Kern) -->
+    <symbol id="sym-sieben" viewBox="0 0 64 64">
+      <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 14 H49 L28 54 M24 34 H42" stroke="#ff2d78" stroke-opacity=".3" stroke-width="15"/>
+        <path d="M15 14 H49 L28 54 M24 34 H42" stroke="#ff2d78" stroke-width="9"/>
+        <path d="M15 14 H49 L28 54 M24 34 H42" stroke="#ffd3e4" stroke-width="3"/>
+      </g>
+    </symbol>
+  </svg>
+
+  <a class="skip-link" href="#main">Zum Inhalt springen</a>
+  <header class="kopf"><nav class="container nav" aria-label="Hauptnavigation">
+    <a class="marke" href="./"><span class="logo">▶</span>GAMES</a>
+    <div class="nav-links"><a href="./impressum.html">Impressum</a><a href="./datenschutz.html">Datenschutz</a></div>
+  </nav></header>
+  <main id="main" class="container">
+    <div class="spiel-kopf"><div><h1>SLOTS</h1><p class="unterzeile">Drei Walzen, eine Gewinnlinie, sechs Symbole. Wähle deinen Einsatz und drehe.</p><p class="alters-hinweis">Simuliertes Glücksspiel mit Spielgeld · ab 16</p></div></div>
+
+    <!-- HUD: Wallet-Leiste (von wallet.js gefüllt) + Feld für den letzten Dreh.
+         #wallet-hud hat display:contents (siehe spiel.css), damit seine drei Felder
+         direkt in der .hud-Flexbox mitlaufen. -->
+    <div class="hud">
+      <div id="wallet-hud"></div>
+      <div class="hud-feld"><div class="label">Letzter Dreh</div><div class="wert" id="hud-letzter">–</div></div>
+    </div>
+
+    <div class="buehne" id="buehne">
+      <!-- Das 3x3-Fenster: drei Walzen, jede zeigt 3 Symbole. Die Bänder füllt game.js. -->
+      <div class="walzenfenster" id="fenster" role="img" aria-label="Walzen" data-gewinnfeier-fokus>
+        <div class="walze"><div class="band"></div></div>
+        <div class="walze"><div class="band"></div></div>
+        <div class="walze"><div class="band"></div></div>
+        <div class="gewinnlinie" aria-hidden="true"></div>
+      </div>
+
+      <p class="gewinn-anzeige" id="gewinn-anzeige"></p>
+      <p class="dreh-info" id="dreh-info" aria-live="polite">Wähle deinen Einsatz und dreh die Walzen.</p>
+
+      <div class="einsatz-zeile">
+        <span class="einsatz-label" id="einsatz-label">Einsatz</span>
+        <div class="chips" role="group" aria-labelledby="einsatz-label">
+          <button class="chip" type="button" data-einsatz="10" aria-pressed="false">10</button>
+          <button class="chip" type="button" data-einsatz="25" aria-pressed="false">25</button>
+          <button class="chip" type="button" data-einsatz="50" aria-pressed="false">50</button>
+          <button class="chip" type="button" data-einsatz="100" aria-pressed="false">100</button>
+        </div>
+      </div>
+      <div class="dreh-zeile"><button class="knopf primaer dreh-knopf" id="dreh-knopf" type="button">DREHEN</button></div>
+
+      <div class="tabelle" data-gewinnfeier-bis>
+        <h2>Gewinntabelle</h2>
+        <p class="klein" id="tabelle-hinweis"></p>
+        <ul class="gewinnliste" id="gewinntabelle"></ul>
+      </div>
+    </div>
+
+    <p class="steuerung">Steuerung: <kbd>Leertaste</kbd> dreht die Walzen, <kbd>1</kbd> bis <kbd>4</kbd> wählen den Einsatz (10 / 25 / 50 / 100). Am Handy einfach die Knöpfe antippen. Gewertet wird nur die mittlere Reihe. Nach einem Gewinn sammeln <kbd>S</kbd> und <kbd>Esc</kbd>; in der Risikoleiter riskiert die <kbd>Leertaste</kbd>.</p>
+
+    <div class="hinweis hinweis-casino"><strong>Nur Spielgeld</strong> – kein Echtgeld, keine Kaufmöglichkeit.</div>
+
+    <section style="max-width:420px;margin-top:36px"><h2 style="font-family:var(--pixel);font-weight:400;font-size:.85rem">Lokale Top 3</h2>
+      <p class="klein">Die höchsten Netto-Gewinne einzelner Drehs (Auszahlung minus Einsatz, nach einem eventuellen Risiko).</p>
+      <div id="topliste"></div>
+      <div class="knopf-reihe">
+        <button class="knopf" id="reset" type="button">Topliste zurücksetzen</button>
+        <button class="knopf" id="konto-reset" type="button">Konto zurücksetzen</button>
+      </div>
+      <p class="klein" id="konto-info"></p>
+    </section>
+
+    <section class="lernbox"><details open><summary>Anleitung &amp; Regeln</summary>
+      <p><strong>Ziel:</strong> Bring auf der mittleren Reihe gleiche Symbole zusammen und vermehre dein Spielgeld.</p>
+      <ul>
+        <li>Wähle einen Einsatz (10, 25, 50 oder 100) und drücke DREHEN. Der Einsatz wird sofort von deinem Konto abgebucht.</li>
+        <li>Die Walzen stoppen von links nach rechts. Gewertet wird nur die Gewinnlinie in der Mitte, die oberen und unteren Symbole sind reine Deko.</li>
+        <li>Drei gleiche Symbole auf der Linie zahlen die Quote aus der Gewinntabelle mal Einsatz. Beispiel: Drei Glocken bei 50 Einsatz zahlen 15 × 50 = 750 aus (Netto-Gewinn 700).</li>
+        <li>Zwei Kirschen auf den Walzen 1 und 2 zahlen den doppelten Einsatz (die dritte Walze ist dann egal, solange sie keine Kirsche zeigt).</li>
+        <li><strong>Sammeln oder riskieren:</strong> Nach jedem Gewinn fragt ein Fenster, ob du den Gewinn sammelst oder riskierst. „Sammeln“ schreibt ihn wie gewohnt gut. Die <strong>Leiter</strong> (Stufen ×1, ×2, ×4 … bis ×32 deines Gewinns, die nächste Stufe und die Null blinken im Wechsel) und <strong>Rot/Schwarz</strong> (Farbe der verdeckten Karte erraten, richtig = Gewinn ×2) sind jeweils exakt 50 zu 50: Eine Stufe höher bzw. verdoppelt, oder alles weg. Höher als 5.000 wird nie ausgezahlt. Esc, <kbd>S</kbd> und ein Klick neben das Fenster sammeln immer, und wer 20 Sekunden lang nichts tut, sammelt automatisch: Niemand verliert Geld, nur weil er weggeht. Der Einsatz ist von Anfang an abgebucht, gutgeschrieben wird erst nach deiner Entscheidung. Mehr dazu in der Lernbox „Das Risiko-Feature“.</li>
+        <li>Stehen nach Walze 1 und 2 zwei gleiche Symbole auf der Linie, läuft die dritte Walze besonders langsam aus (der „Spannungs-Stopp“, mehr dazu unten). Den Ton schaltest du oben rechts mit „Ton an/aus“ um.</li>
+        <li>Das Spielgeld teilt sich diese Seite mit den anderen Casino-Spielen. Ist dein Konto unter 10 gerutscht, gibt es neues Startgeld.</li>
+        <li>Ein Dreh landet in der Top 3, wenn der Netto-Gewinn mindestens 100 beträgt und unter den drei besten bisher liegt. Es zählt der Endbetrag nach dem Risiko: Wer sich auf der Leiter verdoppelt, kann damit einen Platz erreichen.</li>
+      </ul>
+    </details></section>
+
+    <section class="lernbox"><details><summary>Das Risiko-Feature: sammeln oder verdoppeln?</summary>
+      <p>Deutsche Spielautomaten bieten nach einem Gewinn seit jeher das „Risiko“ an: Man darf den Gewinn aufs Spiel setzen und ihn verdoppeln. Diese Seite hat zwei Varianten. Bei der <strong>Risikoleiter</strong> klettert man Stufe für Stufe (×1, ×2, ×4, ×8, ×16, ×32 des Gewinns). Die nächste Stufe und die „0“ blinken im Wechsel, mit „Riskieren“ bleibt das Licht stehen: Leuchtet die Stufe, geht es hoch, leuchtet die Null, stürzt man auf 0. Bei <strong>Rot/Schwarz</strong> tippt man auf die Farbe einer verdeckten Karte: richtig = der Gewinn verdoppelt sich, falsch = 0.</p>
+      <p><strong>Beides ist exakt 50 zu 50.</strong> Dann rechnet sich der Erwartungswert so: <code>0,5 × 2G + 0,5 × 0 = G</code>. Bei einem Gewinn G ändert das Riskieren im Durchschnitt nichts, weder zum Guten noch zum Schlechten. Das gilt auch für mehrere Schritte hintereinander: Bis Stufe n kommt man mit <code>0,5<sup>n</sup></code> und bekommt dann das <code>2<sup>n</sup></code>-fache. Das Produkt ist wieder genau G. Die Auszahlungsquote der Slots (94,95 %) bleibt dadurch unverändert. Was sich ändert, ist die <strong>Streuung</strong>: Aus einem sicheren Gewinn wird eine Lotterie. Die Hälfte der Wagnisse endet bei 0, ein kleiner Rest bei einem Vielfachen. Wer „nur noch eine Stufe“ weitermacht, steht am Ende meistens mit leeren Händen da, auch wenn der Durchschnitt stimmt.</p>
+      <p><strong>Ehrlicher als manche echten Geräte:</strong> Bei echten Automaten ist die Gewinnchance im Risiko-Modus nicht in jedem Fall 50 %, sie kann unter 50 % liegen, je nach Gerät und Regelwerk. Hier ist sie exakt 50 %, und die Tests prüfen das über Hunderttausende Ziehungen. Eine Zwangsgrenze gibt es trotzdem: Höher als 5.000 wird nie ausgezahlt. Wo darüber hinaus keine ganze Verdopplung mehr unter das Limit passt, entfällt das Risiko; die Leiter braucht mindestens drei Stufen unter dem Limit, Rot/Schwarz mindestens eine Verdopplung.</p>
+      <p>Und wie beim Rest dieser Seite: Das Risiko-Ergebnis steht fest, bevor die Animation es zeigt. Das blinkende Licht läuft nur aus, die Karte klappt nur um. Der Spielgeld-Betrag, der gerade sicher ist, gilt in jedem Moment: Verlässt du die Seite, bekommst du genau diesen Betrag.</p>
+    </details></section>
+
+    <section class="lernbox"><details><summary>Die Psychologie echter Automaten</summary>
+      <p>Ein Spielautomat ist auch Inszenierung: Töne, Lichter und Timing lassen jeden Dreh spannend wirken, obwohl er für sich genommen reiner Zufall ist. Diese Seite setzt vier solcher Mittel ein. <strong>Spannungs-Stopp:</strong> Stehen nach Walze 1 und 2 zwei gleiche Symbole auf der Linie (bei rund 30 % der Drehs), pulsieren sie golden, ein Herzschlag-Ton baut sich auf und Walze 3 läuft ein bis zwei Sekunden länger aus. Das ist die klassische „Noch eins!“-Mechanik; bei zwei Kirschen ist der Gewinn zu diesem Zeitpunkt sogar schon sicher. <strong>Fast-Gewinn-Dramatik:</strong> Liegt das dritte gleiche Symbol zufällig direkt über oder unter der Linie, wackelt die Walze und es erscheint „So knapp!“. Rechnerisch ist so ein Dreh ein ganz normaler Verlust, das Gehirn verbucht ihn aber als „fast gewonnen“ und will den nächsten Dreh. <strong>Jeden Gewinn feiern:</strong> Schon der kleinste Linien-Treffer bekommt Lichtlauf und Jingle, Verluste bleiben leise, und so wirken Gewinne häufiger, als sie sind. <strong>Ton und Licht:</strong> Stopp-Ticks, Münz-Klicken beim Hochzählen und der Lauflicht-Rahmen halten die Aufmerksamkeit oben. Das alles passiert erst NACH der Auslosung und ändert kein Ergebnis: Der Zufall bleibt ehrlich, die Netto-Anzeige auch (ein Verlust von 10 steht als −10 da).</p>
+      <p>Was manche echten Automaten zusätzlich tun und diese Seite bewusst <em>nicht</em> tut (in vielen Ländern ist das reguliert oder verboten):</p>
+      <ul>
+        <li><strong>Manipulierte Fast-Gewinne:</strong> Über gewichtete „virtuelle Walzen“ landet das dritte Gewinnsymbol viel öfter knapp neben der Linie, als es der Zufall täte. Hier sind alle 20 Stopp-Positionen jeder Walze gleich wahrscheinlich.</li>
+        <li><strong>Verschleierte Netto-Verluste („Losses disguised as Wins“):</strong> Der Automat feiert mit Jingle und Lichtshow einen Gewinn, der kleiner ist als der Einsatz, sodass man sich als Gewinner fühlt, obwohl Geld fehlt. Hier zahlt jeder Linien-Treffer mindestens das Doppelte des Einsatzes, und die Anzeige nennt immer den echten Netto-Wert.</li>
+        <li><strong>Echtgeld:</strong> Mit Geld, das wirklich weh tut, wirken all diese Reize ungleich stärker. Hier gibt es nur Spielgeld, keine Einzahlung und keine Kaufmöglichkeit.</li>
+      </ul>
+    </details></section>
+
+    <section class="lernbox"><details><summary>Wie funktioniert der Code?</summary>
+      <p><strong>Das Walzenband.</strong> Jede Walze ist ein festes Array mit 20 Feldern, zum Beispiel <code>["kirsche", "kirsche", "zitrone", …]</code>. Gedreht wird, indem ein Stopp-Index zufällig gewählt wird: <code>Math.floor(Math.random() * 20)</code>. Das Symbol an diesem Index liegt auf der Gewinnlinie, die beiden Nachbarn davor und danach sind oben und unten zu sehen (das Band ist ringförmig). <code>Math.random()</code> reicht hier völlig: Es geht um Spielgeld, niemand kann etwas Echtes gewinnen, also braucht es keinen kryptografischen Zufall.</p>
+      <p><strong>Wahrscheinlichkeiten stecken im Band.</strong> Wie oft ein Symbol im Array vorkommt, bestimmt seine Chance: 10 Kirschen bei 20 Feldern sind 1/2, die Neon-7 steht nur 1× drin und kommt mit 1/20 pro Walze. Die Walzen laufen unabhängig voneinander, also werden die Chancen multipliziert. Dreimal Sieben: <code>1/20 × 1/20 × 1/20 = 1/8000</code>.</p>
+      <p><strong>Die Auszahlungsquote (RTP) herleiten.</strong> RTP heißt „Return to Player“: Wie viel vom Einsatz kommt auf lange Sicht zurück? Man summiert über alle Gewinnfälle <em>Wahrscheinlichkeit × Quote</em>. Alle Walzen haben dieselbe Zusammensetzung, deshalb ist die Anzahl der Dreier-Kombinationen einfach Anzahl³ von 8000 möglichen Stopp-Kombinationen (20 × 20 × 20):</p>
+      <table class="rtp-tabelle">
+        <thead><tr><th scope="col">Fall</th><th scope="col">Kombinationen</th><th scope="col">Quote</th><th scope="col">Beitrag</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">3 × Neon-7</th><td>1³ = 1</td><td>×50</td><td>50 / 8000</td></tr>
+          <tr><th scope="row">3 × Stern</th><td>2³ = 8</td><td>×25</td><td>200 / 8000</td></tr>
+          <tr><th scope="row">3 × Glocke</th><td>2³ = 8</td><td>×15</td><td>120 / 8000</td></tr>
+          <tr><th scope="row">3 × Melone</th><td>2³ = 8</td><td>×8</td><td>64 / 8000</td></tr>
+          <tr><th scope="row">3 × Zitrone</th><td>3³ = 27</td><td>×6</td><td>162 / 8000</td></tr>
+          <tr><th scope="row">3 × Kirsche</th><td>10³ = 1000</td><td>×5</td><td>5000 / 8000</td></tr>
+          <tr><th scope="row">2 × Kirsche links</th><td>10 × 10 × 10 = 1000</td><td>×2</td><td>2000 / 8000</td></tr>
+          <tr class="summe"><th scope="row">Summe</th><td></td><td></td><td>7596 / 8000 = 94,95 %</td></tr>
+        </tbody>
+      </table>
+      <p>Beim Kirschpaar sind die ersten beiden Walzen Kirschen (10 × 10 Möglichkeiten) und die dritte ist <em>keine</em> Kirsche (20 − 10 = 10 Möglichkeiten), sonst wäre es ein Dreier. Auf lange Sicht kommen also rund 94,95 % der Einsätze zurück, der „Hausvorteil“ beträgt 5,05 %. Kurzfristig schwankt das stark: Die Summe sagt nichts darüber, wie ein einzelner Abend läuft. Die Funktion <code>rtpBerechnen()</code> zählt dieselbe Rechnung durch, indem sie alle 8000 Kombinationen einmal durchgeht. Eine Simulation mit einer Million Drehs bestätigt den Wert.</p>
+      <p><strong>Erst entscheiden, dann animieren.</strong> Das Ergebnis steht fest, bevor sich die Walzen bewegen. Die Animation ist nur Show und ändert nichts mehr. Die Walzenbänder stehen dreifach hintereinander im DOM, ihre Position wird als <code>translateY</code> in Prozent gesetzt. Prozentwerte beziehen sich auf die eigene Höhe des Elements, deshalb funktioniert das bei jeder Bildschirmbreite ohne Pixelrechnung. Per <code>requestAnimationFrame</code> wird die Position in jedem Frame neu berechnet: erst gleichmäßiger Lauf, dann eine Bremsphase mit <code>easeOutBack</code>, die kurz über das Ziel hinausschwingt (der Bounce). Der Rest-Modulo (<code>% 20</code>) sorgt dafür, dass das Band nahtlos von vorn beginnt.</p>
+      <p><strong>Der Weg des Geldes.</strong> Der Ablauf pro Dreh: <code>einsatzAbbuchen()</code>, Ergebnis auswürfeln, Walzen laufen lassen, bei einem Gewinn feiern und das Risiko anbieten, dann <code>rundeAbschliessen(einsatz, endbetrag)</code> und <code>walletHudAktualisieren()</code>. Der <code>endbetrag</code> ist das, was <code>risikoAnbieten()</code> aus <code>assets/risiko.js</code> zurückgibt: 0 bei einem Absturz, der Gewinn bei „Sammeln“, mehr bei Erfolg. Das Konto selbst liegt in <code>wallet.js</code> und wird von allen Casino-Spielen geteilt. Damit nichts verloren geht, steht in <code>offeneRunde.auszahlung</code> immer der aktuell SICHERE Betrag (zuerst der Gewinn des Drehs, nach jeder Risiko-Ziehung der neue Wert, den das Modul über den Rückruf <code>beiAenderung</code> meldet). Verlässt man die Seite mitten im Dreh oder mitten im Risiko, bucht ein <code>pagehide</code>-Ereignis genau diesen Betrag. Nach 20 Sekunden ohne Eingabe sammelt das Risiko-Fenster von selbst.</p>
+      <p><strong>Das Risiko-Modul.</strong> Seine Regeln sind reine Funktionen: <code>leiterStufen(betrag, maxBetrag)</code> liefert die Stufen, <code>risikoZiehen()</code> prüft <code>zufall() &lt; 0.5</code> (genau die untere Hälfte des Zufallsbereichs), <code>kartenZiehen()</code> teilt den Zufall in 52 Streifen, die ersten 26 (Herz, Karo) sind rot, die letzten 26 schwarz. Die Leiter selbst (<code>leiterBauen()</code>) wird auch vom Solo-Spiel „Risikoleiter“ benutzt, es gibt sie nur einmal im Code.</p>
+      <p><strong>Gewinne feiern.</strong> Je größer der Gewinn im Verhältnis zum Einsatz, desto wilder die Animation. Gemessen wird der Faktor <code>Auszahlung ÷ Gesamteinsatz</code>, nicht der absolute Betrag, deshalb skaliert alles automatisch mit deinem Einsatz: ab ×5 „Schöner Gewinn“ (Banner), ab ×15 „Großer Gewinn“ (Overlay mit Funken), ab ×40 „Mega Gewinn“ (Münzregen und blitzender Rand). Die Stufenwahl ist eine kleine reine Funktion, <code>stufeBestimmen(betrag, einsatz)</code> in <code>assets/gewinnfeier.js</code>, die Münzen entstehen in einer eigenen Mini-Partikel-Engine auf einem <code>&lt;canvas&gt;</code> (Gravitation, <code>requestAnimationFrame</code>, echte Zeitschritte). Ein Klick oder Tastendruck überspringt die Feier sofort, bei „Bewegung reduzieren“ bleibt nur ein ruhiges Banner. An der Auszahlung ändert die Feier nichts.</p>
+      <p><strong>Dramatik ohne Manipulation.</strong> Spannungs-Stopp und „So knapp!“ werden NACH der Auswertung aus dem fertigen Ergebnis abgeleitet: <code>spannungPruefen(linie)</code> und <code>fastGewinnPruefen(stopps)</code> lesen nur, was schon feststeht, und wählen keinen Stopp aus. Der Spannungs-Stopp ändert allein den Lauf-Plan (<code>laufPlanErstellen(start, ziel, laengen, spannung)</code>): Die dritte Walze landet auf demselben Ziel, rollt etwas langsamer und bremst über ein bis zwei Sekunden statt über 0,5. Die Rechnung dahinter ist eine Zeile: Aus <code>strecke = tempo × laufzeit + bremsWeg</code> und <code>bremsWeg = tempo × bremsZeit ÷ (bounce + 3)</code> ergibt sich das Rolltempo, bei dem das Abbremsen ohne Ruck beginnt. Die Töne stammen aus <code>assets/klang.js</code> (Web-Audio-Oszillatoren statt Audiodateien, erst nach der ersten Nutzer-Geste hörbar). Die Münz-Ticks hängen per <code>MutationObserver</code> an den hochzählenden Zahlen und sind auf einen Tick alle 70 ms gedrosselt. Bei „Bewegung reduzieren“ entfallen Lauflicht, Wackeln und Pulsieren, die Spannungs-Pause schrumpft auf 0,15 s.</p>
+    </details></section>
+  </main>
+  <footer class="fuss"><div class="container fuss-in"><span>Browser-Arcade · Open Source</span><nav aria-label="Rechtliches"><a href="./impressum.html">Impressum</a><a href="./datenschutz.html">Datenschutz</a></nav></div></footer>
+  <script type="module" src="./game.js"></script>
+</body>
+</html>
