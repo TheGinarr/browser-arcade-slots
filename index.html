@@ -3,15 +3,19 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="theme-color" content="#07070f" />
+    <meta name="theme-color" content="#07070f" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f2f3f9" media="(prefers-color-scheme: light)" />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./assets/style.css" />
+    <script src="./assets/thema.js?v=20261024"></script>
+    <link rel="stylesheet" href="./assets/style.css?v=20261024w" />
     <!-- spielspezifische Styles (Walzen, Gewinnlinie, Gewinntabelle) – das gemeinsame Design bleibt in ../assets/style.css -->
-    <link rel="stylesheet" href="./spiel.css" />
+    <link rel="stylesheet" href="./spiel.css?v=20261024t" />
+    <link rel="stylesheet" href="./assets/autodreh.css?v=20261020" />
+    <link rel="stylesheet" href="./automat.css?v=20261024" />
     <title>Slots · Browser-Arcade</title>
     <meta
       name="description"
-      content="Slots mit Spielgeld: drei Walzen, eine Gewinnlinie, sechs eigene Symbole. Lerne nebenbei, wie die Auszahlungsquote (RTP) berechnet wird. Ohne Konto und Cookies."
+      content="Slots mit Spielgeld: drei Walzen, eine Gewinnlinie, sechs eigene Symbole. Lerne nebenbei, wie die Auszahlungsquote (RTP) berechnet wird. Ohne Konto und ohne eigene Cookies."
     />
   </head>
   <body style="--ak: var(--gold)">
@@ -228,20 +232,45 @@
       </div>
 
       <div class="buehne" id="buehne">
-        <!-- Das 3x3-Fenster: drei Walzen, jede zeigt 3 Symbole. Die Bänder füllt game.js. -->
-        <div
-          class="walzenfenster"
-          id="fenster"
-          role="img"
-          aria-label="Walzen"
-          data-gewinnfeier-fokus
-        >
-          <div class="walze"><div class="band"></div></div>
-          <div class="walze"><div class="band"></div></div>
-          <div class="walze"><div class="band"></div></div>
-          <div class="gewinnlinie" aria-hidden="true"></div>
-        </div>
+        <div class="automat" id="automat">
+          <div class="automat-krone" aria-hidden="true">
+            <span class="krone-lichter"></span>
+            <span class="krone-titel">FRUCHT<b>BANDIT</b></span>
+          </div>
+          <div class="automat-koerper">
+            <!-- Das 3x3-Fenster: drei Walzen, jede zeigt 3 Symbole. Die Bänder füllt game.js. -->
+            <div
+              class="walzenfenster"
+              id="fenster"
+              role="img"
+              aria-label="Walzen"
+              data-gewinnfeier-fokus
+            >
+              <div class="walze"><div class="band"></div></div>
+              <div class="walze"><div class="band"></div></div>
+              <div class="walze"><div class="band"></div></div>
+              <div class="gewinnlinie" aria-hidden="true"></div>
+            </div>
 
+            <div class="multi-lampe" id="multi-lampe" role="status" aria-label="Multiplikator ×1">
+              <span class="multi-titel">Multiplikator</span><span class="multi-wert">×1</span>
+            </div>
+            <div class="automat-front" aria-hidden="true">
+              <span class="muenzschacht"><i></i></span>
+              <span class="automat-plakette">777 · ×50</span>
+            </div>
+            <div class="gewinnschale" aria-hidden="true"><span class="muenzen"></span></div>
+          </div>
+          <button
+            class="hebel"
+            id="hebel"
+            type="button"
+            aria-label="Hebel ziehen – dreht die Walzen (wie DREHEN)"
+          >
+            <span class="hebel-stange"><span class="hebel-kugel"></span></span>
+            <span class="hebel-lager"></span>
+          </button>
+        </div>
         <p class="gewinn-anzeige" id="gewinn-anzeige"></p>
         <p class="dreh-info" id="dreh-info" aria-live="polite">
           Wähle deinen Einsatz und dreh die Walzen.
@@ -279,9 +308,7 @@
       </div>
 
       <section style="max-width: 420px; margin-top: 36px">
-        <h2 style="font-family: var(--pixel); font-weight: 400; font-size: 0.85rem">
-          Lokale Top 3
-        </h2>
+        <h2 style="font-family: var(--pixel); font-weight: 400; font-size: 0.85rem">Topliste</h2>
         <p class="klein">
           Die höchsten Netto-Gewinne einzelner Drehs (Auszahlung minus Einsatz, nach einem
           eventuellen Risiko).
@@ -317,6 +344,12 @@
             <li>
               Zwei Kirschen auf den Walzen 1 und 2 zahlen den doppelten Einsatz (die dritte Walze
               ist dann egal, solange sie keine Kirsche zeigt).
+            </li>
+            <li>
+              <strong>Multiplikator:</strong> Unter den Walzen leuchtet bei jedem Dreh eine Lampe
+              mit ×1, ×2 oder ×3. Sie vervielfacht den Gewinn dieses Drehs. Beispiel: Drei Glocken
+              bei 50 Einsatz und ×2 zahlen 15 × 50 × 2 = 1.500 aus. Die Lampe zieht unabhängig von
+              den Walzen: ×2 kommt in 2 von 20 Drehs, ×3 in 1 von 20.
             </li>
             <li>
               <strong>Sammeln oder riskieren:</strong> Nach jedem Gewinn fragt ein Fenster, ob du
@@ -366,7 +399,7 @@
             Durchschnitt nichts, weder zum Guten noch zum Schlechten. Das gilt auch für mehrere
             Schritte hintereinander: Bis Stufe n kommt man mit <code>0,5<sup>n</sup></code> und
             bekommt dann das <code>2<sup>n</sup></code
-            >-fache. Das Produkt ist wieder genau G. Die Auszahlungsquote der Slots (94,95 %) bleibt
+            >-fache. Das Produkt ist wieder genau G. Die Auszahlungsquote der Slots (98,94 %) bleibt
             dadurch unverändert. Was sich ändert, ist die <strong>Streuung</strong>: Aus einem
             sicheren Gewinn wird eine Lotterie. Die Hälfte der Wagnisse endet bei 0, ein kleiner
             Rest bei einem Vielfachen. Wer „nur noch eine Stufe“ weitermacht, steht am Ende meistens
@@ -506,8 +539,8 @@
               <tr>
                 <th scope="row">3 × Kirsche</th>
                 <td>10³ = 1000</td>
-                <td>×5</td>
-                <td>5000 / 8000</td>
+                <td>×4</td>
+                <td>4000 / 8000</td>
               </tr>
               <tr>
                 <th scope="row">2 × Kirsche links</th>
@@ -516,18 +549,26 @@
                 <td>2000 / 8000</td>
               </tr>
               <tr class="summe">
-                <th scope="row">Summe</th>
+                <th scope="row">Summe Walzen</th>
                 <td></td>
                 <td></td>
-                <td>7596 / 8000 = 94,95 %</td>
+                <td>6596 / 8000 = 82,45 %</td>
+              </tr>
+              <tr class="summe">
+                <th scope="row">× Multiplikator</th>
+                <td>17 × ×1, 2 × ×2, 1 × ×3</td>
+                <td>Ø ×1,2</td>
+                <td>82,45 % × 1,2 = 98,94 %</td>
               </tr>
             </tbody>
           </table>
           <p>
             Beim Kirschpaar sind die ersten beiden Walzen Kirschen (10 × 10 Möglichkeiten) und die
             dritte ist <em>keine</em> Kirsche (20 − 10 = 10 Möglichkeiten), sonst wäre es ein
-            Dreier. Auf lange Sicht kommen also rund 94,95 % der Einsätze zurück, der „Hausvorteil“
-            beträgt 5,05 %. Kurzfristig schwankt das stark: Die Summe sagt nichts darüber, wie ein
+            Dreier. Die Multiplikator-Lampe zieht unabhängig von den Walzen, im Schnitt ×1,2 (24 /
+            20). Weil beides unabhängig ist, darf man die Erwartungswerte einfach multiplizieren.
+            Auf lange Sicht kommen also rund 98,94 % der Einsätze zurück, der „Hausvorteil“ beträgt
+            nur 1,06 %. Kurzfristig schwankt das stark: Die Summe sagt nichts darüber, wie ein
             einzelner Abend läuft. Die Funktion <code>rtpBerechnen()</code> zählt dieselbe Rechnung
             durch, indem sie alle 8000 Kombinationen einmal durchgeht. Eine Simulation mit einer
             Million Drehs bestätigt den Wert.
@@ -607,6 +648,7 @@
         </nav>
       </div>
     </footer>
-    <script type="module" src="./game.js"></script>
+    <script type="module" src="./game.js?v=20261023"></script>
+    <script type="module" src="./automat.js?v=20261024"></script>
   </body>
 </html>

@@ -187,7 +187,7 @@
   margin-top: 10px;
 }
 .einsatz-label {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--mut);
@@ -284,7 +284,7 @@
 }
 .gewinnliste .quote {
   font-family: var(--pixel);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--gold);
 }
 .gewinnliste .betrag {
@@ -316,7 +316,7 @@
   border-bottom: 1px solid var(--line);
 }
 .rtp-tabelle thead th {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -504,4 +504,38 @@
   padding: 8px 14px;
   font-size: 0.85rem;
   white-space: nowrap;
+}
+
+/* Multiplikator-Lampe (2026-10-23) */
+.multi-lampe {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 12px auto 0;
+  padding: 6px 14px;
+  width: fit-content;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  font-family: var(--pixel);
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+.multi-lampe .multi-wert {
+  font-size: 1rem;
+  min-width: 2.6em;
+  text-align: center;
+}
+.multi-lampe.dreht {
+  opacity: 1;
+}
+.multi-lampe.aktiv {
+  opacity: 1;
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--gold) 60%, transparent);
+}
+.multi-lampe.verpufft {
+  opacity: 0.9;
+  text-decoration: line-through;
 }

@@ -54,6 +54,12 @@
           Zeit mit ?risikoTimeout=3000 in der Adresse verkürzen.)
         - Die Topliste bekommt den Netto-Gewinn des ENDBETRAGS.
 
+   9. MULTIPLIKATOR (seit 2026-10-23): Zu jedem Dreh zieht eine eigene Lampe
+      unabhängig von den Walzen einen Multiplikator aus einem Band mit 20 Feldern
+      (17 x ×1, 2 x ×2, 1 x ×3). Er gilt für den Gewinn dieses Drehs. Erwartungswert
+      E[M] = (17·1 + 2·2 + 1·3) / 20 = 24 / 20 = 1,2. Weil Walzen und Lampe
+      unabhängig sind, gilt RTP = RTP(Walzen) × E[M].
+
    AUSZAHLUNGSQUOTE (RTP) – EXAKTE RECHNUNG
    Walzenband (je Walze gleiche Zusammensetzung, nur andere Reihenfolge):
      20 Felder = 10 Kirschen, 3 Zitronen, 2 Melonen, 2 Glocken, 2 Sterne, 1 Sieben.
@@ -64,20 +70,20 @@
      3 x Glocke     :    2^3 =    8                x  15 =   120
      3 x Melone     :    2^3 =    8                x   8 =    64
      3 x Zitrone    :    3^3 =   27                x   6 =   162
-     3 x Kirsche    :   10^3 = 1000                x   5 =  5000
+     3 x Kirsche    :   10^3 = 1000                x   4 =  4000
      2 Kirschen links (Walze 1+2 Kirsche, Walze 3 KEINE Kirsche):
                        10 x 10 x 10 = 1000          x   2 =  2000
-                                                    Summe =  7596
-   RTP = 7596 / 8000 = 0,9495 = 94,95 %   (Hausvorteil 5,05 %)
+                                                    Summe =  6596
+   RTP(Walzen) = 6596 / 8000 = 0,8245
+   RTP gesamt  = 0,8245 x 1,2 = 0,9894 = 98,94 %   (Hausvorteil 1,06 %)
+   (bis 2026-10-23 ohne Multiplikator und mit Kirschen-Dreier x5: 94,95 %)
    Trefferquote (irgendein Gewinn): (1+8+8+8+27+1000+1000) / 8000 = 25,65 %
 
-   SIMULATION (Node, 1.000.000 Drehs mit Math.random, pure Funktionen aus
-   diesem Modul, Einsatz 1):
-     rtpBerechnen()  (exakt, alle 8000 Kombinationen) = 0,9495
-     simulierter RTP (erster Lauf)                    = 0,9465
-     fünf weitere Läufe                               = 0,9520 / 0,9495 / 0,9486 / 0,9476 / 0,9489
-     simulierte Trefferquote                          = 25,66 % (exakt: 25,65 %)
-   Alle Läufe liegen im Zielkorridor 0,90 bis 0,97. Der simulierte Wert
+   SIMULATION (Node, 10.000.000 Drehs mit Math.random, pure Funktionen aus
+   diesem Modul, Einsatz 1, inkl. Multiplikator, 2026-10-23):
+     rtpBerechnen()  (exakt) = 0,9894 (Walzen allein 0,8245)
+     simulierter RTP         = 0,9891, Trefferquote 25,65 %
+   Der simulierte Wert
    schwankt um den exakten Wert (Gesetz der großen Zahlen): Die Streuung
    eines einzelnen Drehs ist mit etwa 2 Einsätzen groß (selten hohe
    Treffer), bei einer Million Drehs bleibt davon ein Standardfehler von
@@ -97,6 +103,7 @@ import {
   tonKnopf,
 } from "./assets/klang.js";
 import { lade, speichere, entferne } from "./assets/storage.js";
+import { autoDrehEinrichten } from "./assets/autodreh.js";
 import {
   STARTGELD,
   kontostand,
@@ -231,8 +238,24 @@ export const DREIER_QUOTEN = {
   glocke: 15,
   melone: 8,
   zitrone: 6,
-  kirsche: 5,
+  kirsche: 4, // bis 2026-10-23: 5 (gesenkt, weil der Multiplikator dazukam)
 };
+
+/**
+ * Multiplikator-Band: 20 Felder, jedes gleich wahrscheinlich (17 x ×1, 2 x ×2, 1 x ×3).
+ * Die Lampe zieht bei jedem Dreh ein Feld, unabhängig von den Walzen.
+ */
+export const MULTIPLIKATOR_BAND = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 3];
+
+/** Zieht den Multiplikator für einen Dreh (`zufall` austauschbar für Tests). */
+export function multiplikatorZiehen(band = MULTIPLIKATOR_BAND, zufall = Math.random) {
+  return band[Math.floor(zufall() * band.length)];
+}
+
+/** Erwartungswert des Multiplikators (hier 1,2). */
+export function multiplikatorErwartung(band = MULTIPLIKATOR_BAND) {
+  return band.reduce((s, m) => s + m, 0) / band.length;
+}
 
 /** Kleine Quote: Kirsche auf Walze 1 UND 2 (Walze 3 ist keine Kirsche). */
 export const KIRSCHPAAR_QUOTE = 2;
@@ -288,10 +311,10 @@ export function linieAusStopps(stopps, baender = WALZENBAENDER) {
  * Berechnet die Auszahlungsquote (RTP) EXAKT: Alle Stopp-Kombinationen
  * (20 x 20 x 20 = 8000) werden einmal durchgespielt, die Quoten addiert und
  * durch die Anzahl geteilt. Ergebnis = durchschnittliche Auszahlung pro
- * 1 Einsatz, also 0,9495 = 94,95 %.
+ * 1 Einsatz. `rtpWalzen` = 0,8245 ohne Multiplikator, `rtp` = mal E[M] = 0,9894.
  * Das ist der "Beweis" für die Handrechnung im Kommentar ganz oben.
  */
-export function rtpBerechnen(baender = WALZENBAENDER) {
+export function rtpBerechnen(baender = WALZENBAENDER, multiBand = MULTIPLIKATOR_BAND) {
   let summeQuoten = 0;
   let anzahl = 0;
   let treffer = 0;
@@ -305,7 +328,13 @@ export function rtpBerechnen(baender = WALZENBAENDER) {
       }
     }
   }
-  return { rtp: summeQuoten / anzahl, trefferquote: treffer / anzahl, kombinationen: anzahl };
+  const rtpWalzen = summeQuoten / anzahl;
+  return {
+    rtp: rtpWalzen * multiplikatorErwartung(multiBand),
+    rtpWalzen,
+    trefferquote: treffer / anzahl,
+    kombinationen: anzahl,
+  };
 }
 
 /* ------------------------------------------------------------
@@ -565,11 +594,14 @@ function starteSpiel() {
   const kontoResetKnopf = document.getElementById("konto-reset");
   const kontoInfo = document.getElementById("konto-info");
   const kopfElement = document.querySelector(".spiel-kopf");
+  const multiLampe = document.getElementById("multi-lampe");
+  const multiWert = multiLampe.querySelector(".multi-wert");
 
   const laengen = WALZENBAENDER.map((band) => band.length);
 
   // ----- Spielzustand -----
   let laeuft = false; // true, solange gedreht wird: alles gesperrt
+  let autoDreh = null; // Auto-Drehen (assets/autodreh.js), wird beim Start eingerichtet
   let stopps = zufallsStopps(); // aktuelle Stopp-Indizes (Startbild: zufällig, hat keinen Einfluss aufs Geld)
   let offeneRunde = null; // { einsatz, auszahlung, abgerechnet } während eines Drehs; auszahlung = aktuell SICHERER Betrag
   const risikoTimeoutMs = risikoTimeoutLesen();
@@ -658,16 +690,17 @@ function starteSpiel() {
     chipKnoepfe.forEach((chip) => {
       const wert = Number(chip.dataset.einsatz);
       chip.setAttribute("aria-pressed", String(wert === wirksam));
-      chip.disabled = laeuft || wert > stand; // gesperrt beim Drehen oder wenn zu teuer
+      chip.disabled = laeuft || Boolean(autoDreh?.aktiv()) || wert > stand; // gesperrt beim Drehen oder wenn zu teuer
     });
-    drehKnopf.disabled = laeuft || wirksam === 0;
-    resetKnopf.disabled = laeuft;
-    kontoResetKnopf.disabled = laeuft;
+    drehKnopf.disabled = laeuft || Boolean(autoDreh?.aktiv()) || wirksam === 0;
+    resetKnopf.disabled = laeuft || Boolean(autoDreh?.aktiv());
+    kontoResetKnopf.disabled = laeuft || Boolean(autoDreh?.aktiv());
     tabelleBetraegeAktualisieren();
+    autoDreh?.aktualisieren();
   }
 
   function einsatzWaehlen(wert) {
-    if (laeuft || !EINSATZSTUFEN.includes(wert) || wert > kontostand()) return;
+    if (laeuft || autoDreh?.aktiv() || !EINSATZSTUFEN.includes(wert) || wert > kontostand()) return;
     gewaehlterEinsatz = wert;
     speichere(SPIEL, "einsatz", wert);
     steuerungAktualisieren();
@@ -720,7 +753,8 @@ function starteSpiel() {
     const einsatz = wirksamerEinsatz() || gewaehlterEinsatz;
     tabelleHinweis.textContent =
       `Auszahlung = Quote × Einsatz. Rechts siehst du sie für deinen Einsatz von ${zahlText(einsatz)} ` +
-      `(Netto-Gewinn = Auszahlung minus Einsatz). Gewertet wird nur die mittlere Reihe.`;
+      `(Netto-Gewinn = Auszahlung minus Einsatz). Gewertet wird nur die mittlere Reihe. ` +
+      `Die Multiplikator-Lampe (×1, ×2 oder ×3) vervielfacht jeden Gewinn zusätzlich.`;
     for (const { quote, element } of betragElemente) {
       element.textContent = zahlText(quote * einsatz);
     }
@@ -749,14 +783,40 @@ function starteSpiel() {
     if (netto > 0 && !bewegungReduziert()) animationNeuStarten(gewinnAnzeige, "rekord-puls");
   }
 
-  function ergebnisTextBauen(ergebnis) {
+  function ergebnisTextBauen(ergebnis, multi = 1) {
+    const zusatz = multi > 1 ? ` Multiplikator ×${multi}!` : "";
     if (ergebnis.art === "dreier") {
-      return `Dreimal ${SYMBOL_NAMEN[ergebnis.symbol]}! Quote ×${ergebnis.quote}.`;
+      return `Dreimal ${SYMBOL_NAMEN[ergebnis.symbol]}! Quote ×${ergebnis.quote}.${zusatz}`;
     }
     if (ergebnis.art === "kirschpaar") {
-      return `Zwei Kirschen nebeneinander. Quote ×${ergebnis.quote}.`;
+      return `Zwei Kirschen nebeneinander. Quote ×${ergebnis.quote}.${zusatz}`;
     }
-    return "Leider kein Treffer.";
+    return multi > 1 ? `Leider kein Treffer, der ×${multi} verpufft.` : "Leider kein Treffer.";
+  }
+
+  // Multiplikator-Lampe: flackert während des Drehs, zeigt danach den gezogenen Wert.
+  // Reine Anzeige: der Wert steht vor der Animation fest (multiplikatorZiehen in drehen()).
+  let multiTimer = 0;
+  function multiLampeDrehen() {
+    clearInterval(multiTimer);
+    multiLampe.classList.remove("aktiv", "verpufft");
+    multiLampe.classList.add("dreht");
+    if (bewegungReduziert()) {
+      multiWert.textContent = "×?";
+      return;
+    }
+    let i = 0;
+    multiTimer = setInterval(() => {
+      i = (i + 1) % 3;
+      multiWert.textContent = `×${i + 1}`;
+    }, 90);
+  }
+  function multiLampeSetzen(multi, gewonnen) {
+    clearInterval(multiTimer);
+    multiLampe.classList.remove("dreht");
+    multiWert.textContent = `×${multi}`;
+    if (multi > 1) multiLampe.classList.add(gewonnen ? "aktiv" : "verpufft");
+    multiLampe.setAttribute("aria-label", `Multiplikator ×${multi}`);
   }
 
   /** Entfernt alle Effekte des letzten Drehs (Gewinn, Spannung, "So knapp!"). */
@@ -1034,8 +1094,10 @@ function starteSpiel() {
     const ziel = zufallsStopps();
     const linie = linieAusStopps(ziel);
     const ergebnis = gewinnAuswerten(linie);
-    const auszahlung = einsatz * ergebnis.quote;
+    const multi = multiplikatorZiehen(); // unabhängig von den Walzen (siehe MULTIPLIKATOR_BAND)
+    const auszahlung = einsatz * ergebnis.quote * multi;
     const netto = auszahlung - einsatz;
+    multiLampeDrehen();
     offeneRunde = { einsatz, auszahlung, abgerechnet: false };
 
     // 1b. Inszenierung planen. EHRLICHKEIT: Ab hier steht das Ergebnis fest. Die beiden
@@ -1053,6 +1115,7 @@ function starteSpiel() {
       beiStopp: (i) => walzeGestoppt(i, ziel, spannung, knapp),
     });
     fensterElement.classList.remove("dreht");
+    multiLampeSetzen(multi, ergebnis.art !== "nichts");
 
     // 3. Anzeigen. Eine Niete (Auszahlung 0) wird sofort verbucht. Ein GEWINN dagegen erst NACH der
     //    Risiko-Entscheidung (Schritt 3c): Bis dahin ist er nur "sicher" (offeneRunde.auszahlung), der
@@ -1064,7 +1127,7 @@ function starteSpiel() {
       walletHudAktualisieren();
     }
     ergebnisAnzeigen(netto); // ehrlich: ein Verlust von 10 bleibt "−10", egal wie es vorher geklungen hat
-    drehInfo.textContent = ergebnisTextBauen(ergebnis);
+    drehInfo.textContent = ergebnisTextBauen(ergebnis, multi);
     if (knapp) {
       drehInfo.textContent = `So knapp! Das dritte Symbol lag direkt ${knapp.richtung === "oben" ? "über" : knapp.richtung === "unten" ? "unter" : "über und unter"} der Linie. ${drehInfo.textContent}`;
       drehInfo.classList.add("knapp");
@@ -1095,16 +1158,19 @@ function starteSpiel() {
     let endbetrag = auszahlung;
     if (gewinn) {
       drehInfo.textContent = `Gewinn ${zahlText(auszahlung)}: sammeln oder riskieren?`;
-      endbetrag = await risikoAnbieten({
-        buehne: buehneElement,
-        betrag: auszahlung,
-        einsatz,
-        maxBetrag: RISIKO_MAX_BETRAG,
-        timeoutMs: risikoTimeoutMs,
-        beiAenderung: (sicher) => {
-          if (offeneRunde) offeneRunde.auszahlung = sicher;
-        },
-      });
+      // Beim Auto-Drehen wird wie an echten Automaten automatisch gesammelt (kein Risiko-Angebot).
+      endbetrag = autoDreh?.aktiv()
+        ? auszahlung
+        : await risikoAnbieten({
+            buehne: buehneElement,
+            betrag: auszahlung,
+            einsatz,
+            maxBetrag: RISIKO_MAX_BETRAG,
+            timeoutMs: risikoTimeoutMs,
+            beiAenderung: (sicher) => {
+              if (offeneRunde) offeneRunde.auszahlung = sicher;
+            },
+          });
 
       // 3d. Jetzt erst gutschreiben: der Endbetrag, nicht der ursprüngliche Gewinn.
       const muenzen = muenzTickGeber();
@@ -1150,6 +1216,7 @@ function starteSpiel() {
 
     // 5. Pleite? (Konto unter dem kleinsten Einsatz)
     if (istPleite(EINSATZSTUFEN[0])) pleiteDialogZeigen();
+    return { einsatz, auszahlung: endbetrag, netto: endNetto, freispiele: false }; // für das Auto-Drehen
   }
 
   // ---------------------------------------------------------
@@ -1176,7 +1243,8 @@ function starteSpiel() {
       // (anklicken). Dort NICHT zusätzlich drehen, sonst würde es doppelt ausgelöst.
       if (tag === "BUTTON" || tag === "A" || tag === "SUMMARY") return;
       e.preventDefault(); // Seite nicht scrollen
-      drehen();
+      if (autoDreh?.aktiv()) autoDreh.stoppen();
+      else drehen();
     } else if (/^[1-9]$/.test(e.key) && Number(e.key) <= EINSATZSTUFEN.length) {
       einsatzWaehlen(EINSATZSTUFEN[Number(e.key) - 1]); // Taste 1 = erster Chip, 2 = zweiter …
     }
@@ -1222,6 +1290,17 @@ function starteSpiel() {
   baenderAufbauen();
   alleWalzenSetzen();
   tabelleAufbauen();
+  autoDreh = autoDrehEinrichten({
+    spiel: SPIEL,
+    drehKnopf,
+    drehen,
+    bereit: () => !laeuft && wirksamerEinsatz() > 0 && !document.querySelector("dialog[open]"),
+    hatFreispiele: false,
+    melden: (text) => {
+      drehInfo.textContent = text;
+    },
+    beiAenderung: steuerungAktualisieren,
+  });
   steuerungAktualisieren();
   seiteAktualisieren();
   if (istPleite(EINSATZSTUFEN[0])) pleiteDialogZeigen(); // z. B. nach Seitenwechsel mit leerem Konto

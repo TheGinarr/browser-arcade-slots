@@ -1,0 +1,82 @@
+/* Auto-Drehen (assets/autodreh.js) – Knopf neben DREHEN, Einstellungs-Dialog, Statuszeile */
+.dreh-zeile {
+  gap: 10px;
+  align-items: stretch;
+}
+.auto-knopf {
+  min-height: 58px;
+  min-width: 96px;
+  font-family: var(--pixel);
+  font-weight: 400;
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+}
+.auto-knopf.laeuft {
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--gold) 35%, transparent);
+  animation: auto-puls 1.6s ease-in-out infinite;
+}
+@keyframes auto-puls {
+  50% {
+    box-shadow: 0 0 4px color-mix(in srgb, var(--gold) 20%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auto-knopf.laeuft {
+    animation: none;
+  }
+}
+.auto-status {
+  text-align: center;
+  color: var(--mut);
+  margin: 8px 0 0;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+}
+
+dialog.auto-dialog {
+  text-align: left;
+  max-width: min(92vw, 460px);
+}
+dialog.auto-dialog h2 {
+  text-align: center;
+}
+.auto-feld {
+  border: 0;
+  padding: 0;
+  margin: 0 0 14px;
+}
+.auto-feld legend {
+  color: var(--txt);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.auto-chips {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+.auto-haken {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--txt);
+  margin: 4px 0 14px;
+  cursor: pointer;
+}
+.auto-haken input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ak);
+}
+dialog.auto-dialog p.auto-hinweis {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0;
+}
+@media (max-width: 420px) {
+  .auto-knopf {
+    min-width: 76px;
+    padding: 12px 10px;
+  }
+}
